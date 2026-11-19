@@ -58,7 +58,7 @@ echo "==> Nephclick PhotoLab $VERSION for macOS ($ARCH), identity: $IDENTITY, no
 if [[ "$SKIP_BUILD" = 0 ]]; then
   args=()
   for t in "${TARGETS[@]}"; do args+=(--target "$t"); done
-  (cd "$ROOT" && cargo build --release --locked -p nephclick-photolab -p nephclick-photolab-cli --features heif "${args[@]}")
+  (cd "$ROOT" && cargo build --release -p nephclick-photolab -p nephclick-photolab-cli --features heif "${args[@]}")
 fi
 
 rm -rf "$WORK"
