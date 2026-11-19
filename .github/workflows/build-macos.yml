@@ -37,7 +37,7 @@ permissions:
 jobs:
   build-macos:
     name: Build macOS App (${{ inputs.arch || 'aarch64' }})
-    runs-on: macos-14 # Native Apple Silicon (M-series) Mac runner
+    runs-on: macos-latest
     timeout-minutes: 60
 
     steps:
