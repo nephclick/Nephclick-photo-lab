@@ -1,0 +1,28 @@
+[package]
+name = "nephclick-photolab-compose"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+nephclick-photolab-geom = { workspace = true }
+nephclick-photolab-color = { workspace = true }
+nephclick-photolab-raster = { workspace = true }
+nephclick-photolab-doc = { workspace = true }
+nephclick-photolab-vector = { workspace = true }
+craft-cms = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rayon = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+criterion = { workspace = true }
+nephclick-photolab-paint = { workspace = true }
+
+[[bench]]
+name = "compose"
+harness = false

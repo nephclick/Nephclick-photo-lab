@@ -1,0 +1,9 @@
+Nephclick PhotoLab portable mode
+
+While this file sits next to nephclick-photolab.exe, Nephclick PhotoLab keeps its preferences, brush presets,
+crash-recovery autosaves and startup state in the NephclickPhotoLabData folder beside it, and writes
+nothing to %APPDATA% or %LOCALAPPDATA%. Copy the whole folder to move Nephclick PhotoLab with its settings.
+
+Delete this file to use the normal per-user folders instead: %APPDATA%\NephclickPhotoLab for settings
+and %LOCALAPPDATA%\NephclickPhotoLab\Recovery for crash-recovery autosaves. If NephclickPhotoLabData can't be
+written (for example on a read-only drive), Nephclick PhotoLab says so and uses those folders instead.

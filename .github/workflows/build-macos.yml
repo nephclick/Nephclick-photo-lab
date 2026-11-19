@@ -1,0 +1,92 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+    paths:
+      - 'crates/**'
+      - 'apps/**'
+      - 'packaging/macos/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/build-macos.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'crates/**'
+      - 'apps/**'
+      - 'packaging/macos/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/build-macos.yml'
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Target architecture (aarch64 for Apple Silicon, universal for both)'
+        required: true
+        default: 'aarch64'
+        type: choice
+        options:
+          - aarch64
+          - universal
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build macOS App (${{ inputs.arch || 'aarch64' }})
+    runs-on: macos-14 # Native Apple Silicon (M-series) Mac runner
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ (inputs.arch == 'universal') && 'aarch64-apple-darwin x86_64-apple-darwin' || 'aarch64-apple-darwin' }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-rust-${{ inputs.arch || 'aarch64' }}
+
+      - name: Build & Package macOS App
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+        run: |
+          chmod +x packaging/macos/package.sh packaging/env.sh
+          ./packaging/macos/package.sh --arch ${{ inputs.arch || 'aarch64' }}
+
+      - name: Prepare .app zip archive
+        run: |
+          mkdir -p dist/release
+          if [ -d target/aarch64-apple-darwin/macos-package/NephclickPhotoLab.app ]; then
+            cp -R target/aarch64-apple-darwin/macos-package/NephclickPhotoLab.app dist/release/NephclickPhotoLab.app
+          fi
+          cd dist/release
+          if [ -d NephclickPhotoLab.app ]; then
+            ditto -c -k --keepParent NephclickPhotoLab.app NephclickPhotoLab-macos-aarch64.app.zip
+          fi
+
+      - name: Upload DMG & App Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NephclickPhotoLab-macOS-${{ inputs.arch || 'aarch64' }}
+          path: |
+            dist/release/*.dmg
+            dist/release/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Create GitHub Release (on tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/release/*.dmg
+            dist/release/*.zip
+          generate_release_notes: true
