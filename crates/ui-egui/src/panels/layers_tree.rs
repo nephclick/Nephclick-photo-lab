@@ -457,7 +457,8 @@ impl LayerTree for PhotoLayers<'_> {
     }
 
     fn label_colors_in_menu(&self, target: &MenuTarget<LayerId>) -> bool {
-        matches!(menu_kind(self, target), MenuKind::Layer(_))
+        // On the row and on a pixel layer's thumbnail alike: right-clicking anywhere on a layer can colour it.
+        matches!(menu_kind(self, target), MenuKind::Layer(_) | MenuKind::Thumbnail)
     }
 
     fn hovered(&self) -> Option<LayerId> {
