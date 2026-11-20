@@ -263,7 +263,7 @@ impl NephclickPhotoLabApp {
                     Some("pdn") => "pcraft",
                     Some("kra" | "krz") => "ora",
                     Some("tnpl") => nephclick_photolab_format::TEMPLATE_EXTENSION,
-                    Some("npl" | "pcraft") => nephclick_photolab_format::EXTENSION,
+                    Some("npl" | "nplab" | "pcraft") => nephclick_photolab_format::EXTENSION,
                     Some(_) => "psd",
                     None => nephclick_photolab_format::EXTENSION,
                 };
@@ -730,6 +730,8 @@ impl NephclickPhotoLabApp {
             self.remember_stamp(doc, path);
         }
         self.thumbnail_cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner).invalidate(path);
+        #[cfg(target_os = "macos")]
+        sync_macos_thumbnail(path);
         self.ui.status_error = false;
         let what = crate::i18n::fmt(tl!("Saved {name}"), &[("name", file_open::display_name(path).as_str())]);
         notices::io_warnings(self, &what, warnings);
@@ -891,6 +893,49 @@ pub(crate) fn ensure_memory_to_save(doc: &nephclick_photolab_engine::doc::Docume
     let name = file_open::display_name(path);
     nephclick_photolab_engine::memory_gate::ensure_for_save(&format!("save \u{201c}{name}\u{201d}"), nephclick_photolab_io::estimate_export_bytes(doc, path))
         .map_err(|e| e.to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn sync_macos_thumbnail(path: &str) {
+    if !std::path::Path::new(path).exists() {
+        return;
+    }
+    if let Ok(file_bytes) = std::fs::read(path) {
+        if let Ok(Some(png_bytes)) = nephclick_photolab_format::read_thumbnail(&file_bytes) {
+            let tmp_thumb = std::env::temp_dir().join(format!("nplab_thumb_{}.png", std::process::id()));
+            if std::fs::write(&tmp_thumb, png_bytes).is_ok() {
+                let candidates = [
+                    std::path::PathBuf::from("scripts/set_mac_thumbnail"),
+                    std::path::PathBuf::from("./scripts/set_mac_thumbnail"),
+                    std::path::PathBuf::from("../scripts/set_mac_thumbnail"),
+                    std::path::PathBuf::from("../../scripts/set_mac_thumbnail"),
+                ];
+                let mut executed = false;
+                for tool in &candidates {
+                    if tool.exists() {
+                        let _ = std::process::Command::new(tool).arg(path).arg(&tmp_thumb).status();
+                        executed = true;
+                        break;
+                    }
+                }
+                if !executed {
+                    let swift_candidates = [
+                        std::path::PathBuf::from("scripts/set_mac_thumbnail.swift"),
+                        std::path::PathBuf::from("./scripts/set_mac_thumbnail.swift"),
+                        std::path::PathBuf::from("../scripts/set_mac_thumbnail.swift"),
+                        std::path::PathBuf::from("../../scripts/set_mac_thumbnail.swift"),
+                    ];
+                    for script in &swift_candidates {
+                        if script.exists() {
+                            let _ = std::process::Command::new("swift").arg(script).arg(path).arg(&tmp_thumb).status();
+                            break;
+                        }
+                    }
+                }
+                let _ = std::fs::remove_file(tmp_thumb);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

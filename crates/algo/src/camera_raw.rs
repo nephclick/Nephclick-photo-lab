@@ -630,9 +630,16 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, inputs: &
             }
         });
     }
-    // 8. Detail.
+    // 8. Detail & Optics.
+    if p.defringe_purple > 0.0 || p.defringe_green > 0.0 {
+        optics_defringe(px, w, h, p);
+    }
     if p.noise_luminance > 0.0 || p.noise_color > 0.0 || p.sharpen_amount > 0.0 {
         detail(px, w, h, p, ps);
+    }
+    // 8b. Lens Blur.
+    if p.lens_blur_amount > 0.0 {
+        lens_blur(px, w, h, p);
     }
     // 9. Effects.
     if p.vignette_amount != 0.0 {
@@ -652,6 +659,10 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, inputs: &
                 }
             }
         });
+    }
+    // 10. Geometry (perspective, distortion, transform).
+    if geometry_active(p) {
+        geometry_warp(px, w, h, p);
     }
     if !float {
         for q in px.iter_mut() {
@@ -927,6 +938,161 @@ fn vignette(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
                         }
                     }
                 }
+            }
+        }
+    });
+}
+
+fn optics_defringe(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
+    if p.defringe_purple <= 0.0 && p.defringe_green <= 0.0 {
+        return;
+    }
+    let p_amt = (p.defringe_purple / 20.0).clamp(0.0, 1.0);
+    let g_amt = (p.defringe_green / 20.0).clamp(0.0, 1.0);
+    let mut lum = vec![0.0f32; w * h];
+    for (i, q) in px.iter().enumerate() {
+        lum[i] = luma([q[0], q[1], q[2]]);
+    }
+    par_rows(px, w, 1, |y, row| {
+        for (x, q) in row.iter_mut().enumerate() {
+            let [h_deg, s, v] = rgb_to_hsv([q[0], q[1], q[2]]);
+            if s <= 0.05 {
+                continue;
+            }
+            let gx = lum[y * w + (x + 1).min(w - 1)] - lum[y * w + x.saturating_sub(1)];
+            let gy = lum[(y + 1).min(h.saturating_sub(1)) * w + x] - lum[y.saturating_sub(1) * w + x];
+            let edge = (gx.hypot(gy) * 4.0).clamp(0.0, 1.0);
+            if edge <= 0.02 {
+                continue;
+            }
+            let mut att = 0.0f32;
+            if p_amt > 0.0 && (260.0..=340.0).contains(&h_deg) {
+                let w_h = 1.0 - ((h_deg - 300.0).abs() / 40.0).clamp(0.0, 1.0);
+                att = att.max(p_amt * w_h);
+            }
+            if g_amt > 0.0 && (90.0..=160.0).contains(&h_deg) {
+                let w_h = 1.0 - ((h_deg - 125.0).abs() / 35.0).clamp(0.0, 1.0);
+                att = att.max(g_amt * w_h);
+            }
+            if att > 0.0 {
+                let k = (1.0 - att * edge).clamp(0.0, 1.0);
+                let new_rgb = hsv_to_rgb(h_deg, s * k, v);
+                q[0] = new_rgb[0];
+                q[1] = new_rgb[1];
+                q[2] = new_rgb[2];
+            }
+        }
+    });
+}
+
+fn lens_blur(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
+    if p.lens_blur_amount <= 0.0 || w == 0 || h == 0 {
+        return;
+    }
+    let radius = (p.lens_blur_amount / 100.0 * 12.0).clamp(0.5, 30.0);
+    let boost = (p.lens_blur_boost / 100.0 * 2.0).clamp(0.0, 3.0);
+    let mut r = vec![0.0f32; w * h];
+    let mut g = vec![0.0f32; w * h];
+    let mut b = vec![0.0f32; w * h];
+    for (i, q) in px.iter().enumerate() {
+        let mut col = [q[0], q[1], q[2]];
+        if boost > 0.0 {
+            let l = luma(col);
+            if l > 0.7 {
+                let gain = 1.0 + boost * (l - 0.7) / 0.3;
+                col[0] *= gain;
+                col[1] *= gain;
+                col[2] *= gain;
+            }
+        }
+        r[i] = col[0];
+        g[i] = col[1];
+        b[i] = col[2];
+    }
+    let br = gauss(&r, w, h, radius);
+    let bg = gauss(&g, w, h, radius);
+    let bb = gauss(&b, w, h, radius);
+    let mix = (p.lens_blur_amount / 100.0).clamp(0.0, 1.0);
+    for i in 0..w * h {
+        px[i][0] = px[i][0] * (1.0 - mix) + br[i] * mix;
+        px[i][1] = px[i][1] * (1.0 - mix) + bg[i] * mix;
+        px[i][2] = px[i][2] * (1.0 - mix) + bb[i] * mix;
+    }
+}
+
+fn geometry_active(p: &CameraRaw) -> bool {
+    p.distortion != 0.0
+        || p.vertical != 0.0
+        || p.horizontal != 0.0
+        || p.rotate != 0.0
+        || (p.scale != 100.0 && p.scale != 0.0)
+        || p.aspect != 0.0
+        || p.offset_x != 0.0
+        || p.offset_y != 0.0
+}
+
+fn geometry_warp(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
+    if !geometry_active(p) || w == 0 || h == 0 {
+        return;
+    }
+    let copy = px.to_vec();
+    let cx = w as f32 / 2.0;
+    let cy = h as f32 / 2.0;
+    let diag = (cx * cx + cy * cy).sqrt().max(1.0);
+    let rot = p.rotate.to_radians();
+    let cos_r = rot.cos();
+    let sin_r = rot.sin();
+    let scale = if p.scale > 0.0 { p.scale / 100.0 } else { 1.0 };
+    let aspect_scale_x = if p.aspect > 0.0 { 1.0 + p.aspect / 100.0 } else { 1.0 };
+    let aspect_scale_y = if p.aspect < 0.0 { 1.0 + (-p.aspect) / 100.0 } else { 1.0 };
+    let k_dist = p.distortion / 100.0 * 0.2;
+    let v_skew = p.vertical / 100.0 * 0.3;
+    let h_skew = p.horizontal / 100.0 * 0.3;
+    let off_x = p.offset_x / 100.0 * cx;
+    let off_y = p.offset_y / 100.0 * cy;
+
+    par_rows(px, w, 1, |y, row| {
+        for (x, q) in row.iter_mut().enumerate() {
+            let mut dx = (x as f32 - cx - off_x) / (scale * aspect_scale_x);
+            let mut dy = (y as f32 - cy - off_y) / (scale * aspect_scale_y);
+
+            let rx = dx * cos_r + dy * sin_r;
+            let ry = -dx * sin_r + dy * cos_r;
+            dx = rx;
+            dy = ry;
+
+            let p_factor = (1.0 + dy / cy * v_skew + dx / cx * h_skew).max(0.05);
+            dx *= p_factor;
+            dy *= p_factor;
+
+            let r_norm = (dx * dx + dy * dy).sqrt() / diag;
+            let dist_scale = 1.0 + k_dist * r_norm * r_norm;
+            let sx = cx + dx * dist_scale;
+            let sy = cy + dy * dist_scale;
+
+            if sx >= 0.0 && sx < (w - 1) as f32 && sy >= 0.0 && sy < (h - 1) as f32 {
+                let x0 = sx.floor() as usize;
+                let y0 = sy.floor() as usize;
+                let x1 = (x0 + 1).min(w - 1);
+                let y1 = (y0 + 1).min(h - 1);
+                let fx = sx - x0 as f32;
+                let fy = sy - y0 as f32;
+
+                let p00 = copy[y0 * w + x0];
+                let p10 = copy[y0 * w + x1];
+                let p01 = copy[y1 * w + x0];
+                let p11 = copy[y1 * w + x1];
+
+                for c in 0..4 {
+                    let top = p00[c] * (1.0 - fx) + p10[c] * fx;
+                    let bot = p01[c] * (1.0 - fx) + p11[c] * fx;
+                    q[c] = top * (1.0 - fy) + bot * fy;
+                }
+            } else {
+                q[0] = 0.0;
+                q[1] = 0.0;
+                q[2] = 0.0;
+                q[3] = 0.0;
             }
         }
     });

@@ -287,8 +287,13 @@ fn wand(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui) {
     divider(ui);
     let subject = Button::new(label("Select Subject")).show(ui);
     if clicked(&subject.response) {
-        let result = app.run("select.subject", serde_json::json!({}));
+        let result = app.run("select.subject", serde_json::json!({"cloud": false}));
         crate::retouch_ui::report_smart_result(app, result, tl!("No subject found — try Object Selection or the Lasso"));
+    }
+    let cloud_btn = Button::new(label("Cloud")).show(ui);
+    if clicked(&cloud_btn.response) {
+        let result = app.run("select.subject", serde_json::json!({"cloud": true}));
+        crate::retouch_ui::report_smart_result(app, result, tl!("No subject found — check AI connection"));
     }
     select_and_mask(ui);
 }

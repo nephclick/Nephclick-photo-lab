@@ -435,8 +435,14 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, view: &mut
         view.pending.drain(..queued.len().min(view.pending.len()));
     }
     let canvas_output = shown.output;
+    let pointer_in_canvas = ctx.input(|i| i.pointer.hover_pos()).map_or(false, |p| rect.contains(p));
+    let suppress_canvas_scroll = ctx.is_pointer_over_egui()
+        || app.dialog_open()
+        || !pointer_in_canvas;
     if let Some(next) = canvas_output.view.as_ref() {
-        view.set_from(next, ppp);
+        if !suppress_canvas_scroll || !queued.is_empty() {
+            view.set_from(next, ppp);
+        }
     }
     // The scroll bars' and the compass's change: the bars drag the view, the compass turns it.
     if let Some(next) = turned.as_ref() {

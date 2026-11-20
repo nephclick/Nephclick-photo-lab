@@ -578,20 +578,60 @@ fn channel_form(app: &NephclickPhotoLabApp, id: &str) -> Option<(Vec<Param>, Dia
                 choice("maskChannel", tl!("Mask Channel"), channels(&masks), "none"),
             ]
         }
-        _ => vec![
-            choice("source1Channel", tl!("Source 1 Channel"), channels(&load), &chans[0]),
-            Param::new("source1Invert", tl!("Invert Source 1"), ParamKind::bool(false)),
-            choice("source2Channel", tl!("Source 2 Channel"), channels(&load), &chans[0]),
-            Param::new("source2Invert", tl!("Invert Source 2"), ParamKind::bool(false)),
-            choice("blending", tl!("Blending"), blend_modes(), "multiply"),
-            Param::new("opacity", tl!("Opacity"), ParamKind::number(Some(0.0), Some(100.0), 100.0, 1.0, 0)),
-            choice(
-                "result",
-                tl!("Result"),
-                opts(&[("newChannel", tl!("New Channel")), ("newDocument", tl!("New Document")), ("selection", tl!("Selection"))]),
-                "newChannel",
-            ),
-        ],
+        _ => {
+            let docs: Vec<(String, Label)> = app
+                .session
+                .documents()
+                .iter()
+                .filter(|st| st.doc.size == d.size)
+                .map(|st| (st.doc.name.clone(), Label::from(st.doc.name.clone())))
+                .collect();
+            let mut layers = vec!["merged".to_string()];
+            for (_, _, l) in d.walk().into_iter().rev() {
+                if l.surface().is_some() && !layers.contains(&l.name) {
+                    layers.push(l.name.clone());
+                }
+            }
+            let mut masks = vec!["none".to_string()];
+            masks.extend(load.iter().cloned());
+            let current_doc = d.name.clone();
+            let doc_choices = if docs.is_empty() {
+                vec![(current_doc.clone(), Label::from(current_doc.clone()))]
+            } else {
+                docs
+            };
+
+            vec![
+                Param::section(tl!("Source 1")),
+                choice("source1Document", tl!("Document"), doc_choices.clone(), &current_doc),
+                choice("source1Layer", tl!("Layer"), channels(&layers), "merged"),
+                choice("source1Channel", tl!("Channel"), channels(&load), &chans[0]),
+                Param::new("source1Invert", tl!("Invert"), ParamKind::bool(false)),
+                Param::section(tl!("Source 2")),
+                choice("source2Document", tl!("Document"), doc_choices, &current_doc),
+                choice("source2Layer", tl!("Layer"), channels(&layers), "merged"),
+                choice("source2Channel", tl!("Channel"), channels(&load), &chans[0]),
+                Param::new("source2Invert", tl!("Invert"), ParamKind::bool(false)),
+                Param::section(tl!("Blending")),
+                choice("blending", tl!("Blending"), blend_modes(), "multiply"),
+                Param::new("opacity", tl!("Opacity"), ParamKind::number(Some(0.0), Some(100.0), 100.0, 1.0, 0)),
+                Param::new("scale", tl!("Scale"), ParamKind::number(Some(0.001), Some(2.0), 1.0, 0.1, 3)),
+                Param::new("offset", tl!("Offset"), ParamKind::int(Some(-255), Some(255), 0)),
+                choice("maskChannel", tl!("Mask"), channels(&masks), "none"),
+                Param::section(tl!("Result")),
+                choice(
+                    "result",
+                    tl!("Result"),
+                    opts(&[
+                        ("newDocument", tl!("New Document (Black & White)")),
+                        ("newChannel", tl!("New Channel")),
+                        ("selection", tl!("Selection")),
+                    ]),
+                    "newDocument",
+                ),
+                Param::new("name", tl!("Name"), ParamKind::text("")),
+            ]
+        }
     };
     Some((rows, DialogFields::new()))
 }

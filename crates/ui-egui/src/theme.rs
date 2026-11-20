@@ -895,7 +895,7 @@ impl Tokens {
 
     /// Tokens for the active theme (stored in egui's context data by [`apply`]).
     pub fn get(ctx: &egui::Context) -> Tokens {
-        ctx.data(|d| d.get_temp::<Tokens>(egui::Id::unique("nephclick-photolab-theme"))).unwrap_or_else(|| AppTheme::studio().tokens())
+        ctx.data(|d| d.get_temp::<Tokens>(egui::Id::unique("nephclick-photolab-theme"))).unwrap_or_else(|| AppTheme::pro_medium().tokens())
     }
 
     /// Thin RGB outlines; the filled bands use the same hues with subdued coverage.

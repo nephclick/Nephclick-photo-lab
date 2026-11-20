@@ -450,19 +450,77 @@ impl SubjectCache {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn try_ai_selection(s: &Session, prompt: nephclick_photolab_ai::selection_manager::SelectionPrompt, use_cloud: bool) -> Option<Region> {
+    let d = s.active()?;
+    let bounds = d.doc.bounds();
+    let (w, h) = (bounds.width() as u32, bounds.height() as u32);
+    if w == 0 || h == 0 {
+        return None;
+    }
+    let px = nephclick_photolab_compose::render(&d.doc, bounds).into_px();
+    let mut rgba_bytes = Vec::with_capacity(px.len().checked_mul(4)?);
+    for p in px {
+        rgba_bytes.push((p[0].clamp(0.0, 1.0) * 255.0).round() as u8);
+        rgba_bytes.push((p[1].clamp(0.0, 1.0) * 255.0).round() as u8);
+        rgba_bytes.push((p[2].clamp(0.0, 1.0) * 255.0).round() as u8);
+        rgba_bytes.push((p[3].clamp(0.0, 1.0) * 255.0).round() as u8);
+    }
+    let manager = nephclick_photolab_ai::selection_manager::AiSelectionManager::default();
+    let cloud_config = if use_cloud {
+        let ai = &s.prefs().ai;
+        Some(nephclick_photolab_ai::Config {
+            endpoint: ai.endpoint.clone(),
+            key: None,
+            text_model: ai.text_model.clone(),
+            image_model: ai.image_model.clone(),
+        })
+    } else {
+        None
+    };
+    let engine_pref = if use_cloud {
+        Some(nephclick_photolab_ai::selection_manager::AiEngine::Cloud)
+    } else {
+        None
+    };
+    let res = manager.select(&rgba_bytes, w, h, prompt, engine_pref, cloud_config.as_ref()).ok()?;
+    if res.mask.iter().all(|&v| v == 0) {
+        return None;
+    }
+    Some(Region {
+        bbox: bounds,
+        mask: res.mask,
+    })
+}
+
+#[cfg(target_arch = "wasm32")]
+fn try_ai_selection(_s: &Session, _prompt: (), _use_cloud: bool) -> Option<Region> {
+    None
+}
+
 fn select_subject(s: &mut Session, p: &Value) -> Result<Value> {
     // The selected layer's pixels; the composite only when no pixel layer is selected.
     let all_layers = b(p, "sampleAllLayers", false);
+    let use_cloud = b(p, "cloud", false);
     let d = s.active().ok_or(EngineError::NoDocument)?;
     // What `with_doc_sampler` samples: the active layer's pixels, else the composite.
     let target = d.active_layer.filter(|id| !all_layers && d.doc.layer(*id).and_then(Layer::surface).is_some());
     let c = &s.subject_cache;
-    let hit = c.target == target && c.doc.upgrade().is_some_and(|old| crate::layer_multi_cmds::same_pixels(&old, &d.doc));
+    let hit = !use_cloud && c.target == target && c.doc.upgrade().is_some_and(|old| crate::layer_multi_cmds::same_pixels(&old, &d.doc));
     let region = if hit {
         c.region.clone()
     } else {
         let doc = std::sync::Arc::clone(&d.doc);
-        let region = with_doc_sampler(&doc, d.active_layer, all_layers, |smp, doc| subject::select_subject(smp, doc.bounds())).map(std::sync::Arc::new);
+        #[cfg(not(target_arch = "wasm32"))]
+        let ai_region = try_ai_selection(s, nephclick_photolab_ai::selection_manager::SelectionPrompt::Subject, use_cloud);
+        #[cfg(target_arch = "wasm32")]
+        let ai_region: Option<Region> = None;
+
+        let region = if let Some(r) = ai_region {
+            Some(std::sync::Arc::new(r))
+        } else {
+            with_doc_sampler(&doc, d.active_layer, all_layers, |smp, doc| subject::select_subject(smp, doc.bounds())).map(std::sync::Arc::new)
+        };
         s.subject_cache = SubjectCache { doc: std::sync::Arc::downgrade(&doc), doc_id: Some(doc.id), target, region: region.clone() };
         region
     };
@@ -476,6 +534,56 @@ fn select_subject(s: &mut Session, p: &Value) -> Result<Value> {
         s.subject_cache.doc = std::sync::Arc::downgrade(&d.doc);
     }
     Ok(out)
+}
+
+fn select_ai(s: &mut Session, p: &Value) -> Result<Value> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use nephclick_photolab_ai::selection_manager::SelectionPrompt;
+        let prompt_type = p.get("type").and_then(Value::as_str).unwrap_or("subject");
+        let use_cloud = b(p, "cloud", false);
+        let prompt = match prompt_type {
+            "background" => SelectionPrompt::Background,
+            "all" => SelectionPrompt::AllObjects,
+            "point" => {
+                let pt = point_param(p).ok_or_else(|| bad("select.ai", "point selection needs \"point\": [x, y]"))?;
+                SelectionPrompt::Point { x: pt.0.max(0.0) as u32, y: pt.1.max(0.0) as u32, positive: true }
+            }
+            "box" => {
+                let rect = rect_param(p).ok_or_else(|| bad("select.ai", "box selection needs \"rect\": [x, y, w, h] or \"box\": [x, y, w, h]"))?;
+                SelectionPrompt::Box {
+                    x0: rect.x0.max(0) as u32,
+                    y0: rect.y0.max(0) as u32,
+                    x1: rect.x1.max(0) as u32,
+                    y1: rect.y1.max(0) as u32,
+                }
+            }
+            "text" => {
+                let txt = p.get("text").and_then(Value::as_str).unwrap_or("");
+                if txt.trim().is_empty() {
+                    return Err(bad("select.ai", "text selection needs \"text\": string"));
+                }
+                SelectionPrompt::Text { prompt: txt.to_string() }
+            }
+            _ => SelectionPrompt::Subject,
+        };
+
+        let label = match prompt_type {
+            "background" => "Select Background",
+            "all" => "Select All Objects",
+            "text" => "Text-to-Select",
+            "point" => "Click to Select",
+            "box" => "Rectangle Selection",
+            _ => "Select Subject",
+        };
+
+        let region = try_ai_selection(s, prompt, use_cloud);
+        apply(s, label, region.as_ref(), mode(p, "replace"))
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        Err(EngineError::Other("AI selection is only supported in the native app".into()))
+    }
 }
 
 fn focus_area(s: &mut Session, p: &Value) -> Result<Value> {
@@ -681,9 +789,17 @@ pub fn specs() -> Vec<CommandSpec> {
             "select.subject",
             "Subject",
             ["Select"],
-            r##"{"sampleAllLayers":bool=false,"mode":"replace|add|subtract|intersect"="replace"} (samples the selected layer; the composite when no pixel layer is selected)"##,
+            r##"{"sampleAllLayers":bool=false,"mode":"replace|add|subtract|intersect"="replace","cloud":bool=false} (samples the selected layer; the composite when no pixel layer is selected; cloud uses configured AI API)"##,
             has_doc,
             select_subject
+        ),
+        spec!(
+            "select.ai",
+            "AI Selection",
+            [],
+            r##"{"type":"subject|background|all|point|box|text"="subject","point":[x,y]?,"box":[x0,y0,w,h]?,"text":str?,"mode":"replace|add|subtract|intersect"="replace","cloud":bool=false}"##,
+            has_doc,
+            select_ai
         ),
         spec!(
             "select.refineEdge",

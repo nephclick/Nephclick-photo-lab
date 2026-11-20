@@ -5536,6 +5536,7 @@ dependencies = [
  "craft-xml",
  "exr",
  "flate2",
+ "nephclick-photolab-ai",
  "nephclick-photolab-algo",
  "nephclick-photolab-color",
  "nephclick-photolab-compose",

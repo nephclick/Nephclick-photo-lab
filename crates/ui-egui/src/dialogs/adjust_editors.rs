@@ -17,13 +17,15 @@ use craft::color_ui::ui::gradient::{ColorStop, GradientStops};
 use craft::draw::ui::gradient::{GradientGroup, GradientItem, GradientMap, GradientMapEditor, GradientMapOutput};
 use craft::imaging::ui::adjust::{
     AdjustDialogCx, AdjustField, AdjustSliders, AdjustWords, BlackWhite, BlackWhiteEditor, BrightnessContrast, BrightnessContrastEditor, ChannelMixer,
-    ChannelMixerEditor, ColorBalance, ColorBalanceEditor, ColorBalanceTone, CurvesPanel, HueSaturation, HueSaturationEditor, Levels, LevelsPanel, PhotoFilter,
+    ChannelMixerEditor, ColorBalance, ColorBalanceEditor, ColorBalanceTone, CurvesMode, CurvesPanel, HueSaturation, HueSaturationEditor, Levels, LevelsPanel, PhotoFilter,
     PhotoFilterEditor, SelectiveColor, SelectiveColorEditor, ThresholdEditor, ToneChannels, ToneCurves, ToneSpace,
 };
+use craft::imaging::ui::curve::Curve;
 use craft::imaging::ui::histogram::{ChannelColor, HistogramData};
 use craft::theme::Srgba;
-use craft::ui::contract::Bind;
-use craft::ui::runtime::env::Env;
+use craft::ui::contract::{Bind, Entry, Show as _};
+use craft::ui::pickers::Select;
+use craft::ui::runtime::env::{Env, Label};
 use craft::ui::runtime::requests::ColorRequest;
 use egui::Ui;
 use nephclick_photolab_doc::LayerId;
@@ -244,6 +246,24 @@ fn show(kind: &str, setup: &EditorSetup, ui: &mut Ui, value: &mut AdjustValue, c
             lifted(out.edit, |levels| AdjustValue::Levels { levels })
         }
         ("curves", AdjustValue::Curves { curves }) => {
+            let current_preset = detect_curves_preset(curves);
+            let entries: Vec<Entry<String>> = CURVES_PRESET_NAMES
+                .iter()
+                .map(|&name| Entry::new(name.to_string(), Label::from(name)))
+                .collect();
+            let events = Select::new(Label::from("Preset"), Bind::given(current_preset.to_string()), &entries).show(ui).events;
+            if let Some(picked) = events.value().cloned() {
+                if picked != current_preset {
+                    let from = AdjustValue::Curves { curves: curves.clone() };
+                    apply_curves_preset(curves, setup.channels.len(), &picked);
+                    let to = AdjustValue::Curves { curves: curves.clone() };
+                    let mut edit = EditEvents::default();
+                    edit.push(EditEvent::set(Mixed::Same(from), to, Arc::from("Curves Preset"), None));
+                    return AdjustOut { ask: None, edit };
+                }
+            }
+            ui.add_space(4.0);
+
             let mut panel = CurvesPanel::new("Curves", Bind::bound(&mut *curves), setup.channels.clone())
                 .histograms(&setup.histograms)
                 .sampler(values::curve_sampler)
@@ -452,6 +472,108 @@ pub fn gradient_presets(app: &NephclickPhotoLabApp) -> Vec<GradientGroup> {
             GradientGroup::new(group.name.clone(), items)
         })
         .collect()
+}
+
+pub const CURVES_PRESET_NAMES: &[&str] = &[
+    "Default",
+    "Medium Contrast",
+    "Strong Contrast",
+    "Linear Contrast",
+    "Lighter",
+    "Darker",
+    "Increase Contrast",
+    "Negative",
+    "Color Negative (RGB)",
+    "Cross Process",
+];
+
+pub fn detect_curves_preset(curves: &ToneCurves) -> &'static str {
+    if curves.curves.is_empty() {
+        return "Default";
+    }
+    let Some(pts) = curves.curves[0].points() else {
+        return "Custom";
+    };
+    if pts == &[[0.0, 0.0], [255.0, 255.0]] {
+        if curves.curves.len() >= 4 {
+            let r_pts = curves.curves[1].points().unwrap_or(&[]);
+            let g_pts = curves.curves[2].points().unwrap_or(&[]);
+            let b_pts = curves.curves[3].points().unwrap_or(&[]);
+            if !r_pts.is_empty() && r_pts != &[[0.0, 0.0], [255.0, 255.0]] && !g_pts.is_empty() && !b_pts.is_empty() {
+                return "Cross Process";
+            }
+        }
+        return "Default";
+    }
+    if pts == &[[0.0, 255.0], [255.0, 0.0]] {
+        return "Negative";
+    }
+    if pts == &[[0.0, 0.0], [64.0, 44.0], [192.0, 212.0], [255.0, 255.0]] {
+        return "Medium Contrast";
+    }
+    if pts == &[[0.0, 0.0], [64.0, 32.0], [192.0, 224.0], [255.0, 255.0]] {
+        return "Strong Contrast";
+    }
+    if pts == &[[0.0, 0.0], [64.0, 52.0], [192.0, 204.0], [255.0, 255.0]] {
+        return "Linear Contrast";
+    }
+    if pts == &[[0.0, 0.0], [128.0, 160.0], [255.0, 255.0]] {
+        return "Lighter";
+    }
+    if pts == &[[0.0, 0.0], [128.0, 96.0], [255.0, 255.0]] {
+        return "Darker";
+    }
+    if pts == &[[0.0, 0.0], [64.0, 48.0], [192.0, 208.0], [255.0, 255.0]] {
+        return "Increase Contrast";
+    }
+    "Custom"
+}
+
+pub fn apply_curves_preset(curves: &mut ToneCurves, num_channels: usize, preset: &str) {
+    curves.mode = CurvesMode::Points;
+    let identity = Curve::identity(255.0);
+    let mut new_curves = vec![identity; num_channels];
+    match preset {
+        "Default" => {
+            // All identity
+        }
+        "Medium Contrast" => {
+            new_curves[0] = Curve::smooth(vec![[0.0, 0.0], [64.0, 44.0], [192.0, 212.0], [255.0, 255.0]]);
+        }
+        "Strong Contrast" => {
+            new_curves[0] = Curve::smooth(vec![[0.0, 0.0], [64.0, 32.0], [192.0, 224.0], [255.0, 255.0]]);
+        }
+        "Linear Contrast" => {
+            new_curves[0] = Curve::smooth(vec![[0.0, 0.0], [64.0, 52.0], [192.0, 204.0], [255.0, 255.0]]);
+        }
+        "Lighter" => {
+            new_curves[0] = Curve::smooth(vec![[0.0, 0.0], [128.0, 160.0], [255.0, 255.0]]);
+        }
+        "Darker" => {
+            new_curves[0] = Curve::smooth(vec![[0.0, 0.0], [128.0, 96.0], [255.0, 255.0]]);
+        }
+        "Increase Contrast" => {
+            new_curves[0] = Curve::smooth(vec![[0.0, 0.0], [64.0, 48.0], [192.0, 208.0], [255.0, 255.0]]);
+        }
+        "Negative" | "Color Negative (RGB)" => {
+            if preset == "Color Negative (RGB)" && num_channels >= 4 {
+                for i in 1..num_channels {
+                    new_curves[i] = Curve::smooth(vec![[0.0, 255.0], [255.0, 0.0]]);
+                }
+            } else {
+                new_curves[0] = Curve::smooth(vec![[0.0, 255.0], [255.0, 0.0]]);
+            }
+        }
+        "Cross Process" => {
+            if num_channels >= 4 {
+                new_curves[1] = Curve::smooth(vec![[0.0, 0.0], [56.0, 22.0], [211.0, 255.0], [255.0, 255.0]]);
+                new_curves[2] = Curve::smooth(vec![[0.0, 0.0], [56.0, 39.0], [208.0, 226.0], [255.0, 255.0]]);
+                new_curves[3] = Curve::smooth(vec![[0.0, 20.0], [56.0, 70.0], [211.0, 197.0], [255.0, 235.0]]);
+            }
+        }
+        _ => {}
+    }
+    curves.curves = new_curves;
 }
 
 #[cfg(test)]

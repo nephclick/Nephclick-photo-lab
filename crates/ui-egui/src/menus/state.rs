@@ -9,9 +9,9 @@ pub fn is_enabled(app: &NephclickPhotoLabApp, id: &str) -> bool {
     if crate::tool_shortcuts::tool(id).is_some() {
         return true;
     }
-    // Fit Artboard on Screen needs a board to fit (the bridged view command carries no engine rule).
+    // Fit Artboard on Screen: fits active artboard or falls back to fitting the document view.
     if id == "view.fitArtboardOnScreen" {
-        return app.session.active().is_some_and(|d| d.doc.has_artboards());
+        return app.session.active().is_some();
     }
     if id == "ui.symmetryTransform" {
         return crate::symmetry_ui::can_transform(app);

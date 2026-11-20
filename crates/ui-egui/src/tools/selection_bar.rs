@@ -74,11 +74,17 @@ pub fn show(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, area: egui::Rect)
             acts.push(Act::Fill);
         }
         ui.separator();
+        if Button::new(tl!("Refine Edge")).show(ui).clicked() {
+            acts.push(Act::Command("select.selectAndMask"));
+        }
         if Button::new(tl!("Invert")).icon(IconId::new("contrast")).show(ui).clicked() {
             acts.push(Act::Command("select.inverse"));
         }
         if Button::new(tl!("Mask")).icon(IconId::new("layer_mask")).show(ui).clicked() {
             acts.push(Act::Command("layer.layerMask.revealSelection"));
+        }
+        if Button::new(tl!("Copy")).show(ui).clicked() {
+            acts.push(Act::Command("layer.new.layerViaCopy"));
         }
         if Button::new(tl!("Deselect")).icon(IconId::new("close")).show(ui).clicked() {
             acts.push(Act::Command("select.deselect"));

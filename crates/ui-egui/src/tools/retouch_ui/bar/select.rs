@@ -13,8 +13,12 @@ use crate::option_cells::hint;
 /// The Select Subject button both selection tools carry; `empty` is the message when nothing is found.
 fn select_subject(ui: &mut egui::Ui, app: &mut NephclickPhotoLabApp, empty: &str) {
     if clicked(&Button::new(tl!("Select Subject")).show(ui)) {
-        let r = app.run("select.subject", json!({}));
+        let r = app.run("select.subject", json!({"cloud": false}));
         crate::retouch_ui::report_smart_result(app, r, empty);
+    }
+    if clicked(&Button::new(tl!("Cloud")).show(ui)) {
+        let r = app.run("select.subject", json!({"cloud": true}));
+        crate::retouch_ui::report_smart_result(app, r, tl!("No subject found — check AI connection"));
     }
 }
 
@@ -40,6 +44,14 @@ pub(super) fn object_selection(ui: &mut egui::Ui, app: &mut NephclickPhotoLabApp
     check(ui, tl!("Hard Edge"), &mut o.object_hard_edge, true, None);
     hint(ui, tl!("Drag a rectangle around the object"));
     Divider::vertical().show(ui);
+    if clicked(&Button::new(tl!("Background")).show(ui)) {
+        let r = app.run("select.ai", json!({"type": "background"}));
+        crate::retouch_ui::report_smart_result(app, r, tl!("No background found"));
+    }
+    if clicked(&Button::new(tl!("All Objects")).show(ui)) {
+        let r = app.run("select.ai", json!({"type": "all"}));
+        crate::retouch_ui::report_smart_result(app, r, tl!("No objects found"));
+    }
     select_subject(ui, app, tl!("No subject found — try a rectangle around the object"));
     None
 }

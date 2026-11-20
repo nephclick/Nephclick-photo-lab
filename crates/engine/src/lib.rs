@@ -138,6 +138,7 @@ pub use cmd::preset_import_cmds;
 pub use cmd::print_cmds;
 pub use cmd::rasterize_style_cmds;
 pub use cmd::redeye_cmds;
+pub use cmd::relight_cmds;
 pub use cmd::render_cmds;
 pub use cmd::retouch_cmds;
 pub use cmd::sample_cmds;

@@ -13,3 +13,8 @@ target/
 __pycache__/
 .DS_Store
 snapshot*.png
+.ai_env/
+models/
+scripts/sam2_repo/
+scripts/apple_vision_seg
+scripts/set_mac_thumbnail

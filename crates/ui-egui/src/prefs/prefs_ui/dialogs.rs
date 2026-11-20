@@ -171,7 +171,7 @@ impl StackDialog for PrefsDialog {
         let out = with_env(
             ui,
             |set| set.words = Some(WordsOverride::Replace(words)),
-            |ui| PreferencesWindow::new(Bind::bound(&mut self.state)).remember(SaveKey::new("nephclick_photolab.preferences")).show(ui, &mut with_custom),
+            |ui| PreferencesWindow::new(Bind::bound(&mut self.state)).embedded().remember(SaveKey::new("nephclick_photolab.preferences")).show(ui, &mut with_custom),
         );
         self.doc = Some(with_custom.custom(()));
         if let Some(request) = out.pick_color {
@@ -213,7 +213,13 @@ pub fn window_open(app: &NephclickPhotoLabApp) -> bool {
 
 /// Opens Edit › Preferences on `section` (`general` for an unknown one). With the window open only its page changes.
 pub fn open_preferences(app: &mut NephclickPhotoLabApp, section: &str) {
-    let section = if SECTIONS.iter().any(|(id, _)| *id == section) { section } else { "general" };
+    let section = if SECTIONS.iter().any(|(id, _)| *id == section) {
+        section
+    } else if section == "notifications" {
+        "interface"
+    } else {
+        "general"
+    };
     if let Some(open) = app.framework.dialogs.get_mut::<PrefsDialog>() {
         open.state.selected = section.to_string();
         return;

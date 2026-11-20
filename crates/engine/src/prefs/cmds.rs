@@ -199,6 +199,7 @@ pub fn specs() -> Vec<CommandSpec> {
         section!("edit.preferences.general", "General…", Some("Cmd+K")),
         section!("edit.preferences.interface", "Interface…"),
         section!("edit.preferences.workspace", "Workspace…"),
+        section!("edit.preferences.notifications", "Notifications…"),
         section!("edit.preferences.tools", "Tools…"),
         section!("edit.preferences.historyLog", "History Log…"),
         section!("edit.preferences.fileHandling", "File Handling…"),

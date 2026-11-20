@@ -91,8 +91,8 @@ pub fn default_shortcut(id: &str) -> Option<String> {
 }
 
 /// View navigation that Photoshop keeps live while a dialog is open (so the image can be judged
-/// at any zoom): Zoom In / Out, Fit on Screen, 100%.
-pub const NAV_COMMANDS: [&str; 4] = ["view.zoomIn", "view.zoomOut", "view.fitOnScreen", "view.actualPixels"];
+/// at any zoom): Zoom In / Out, Fit on Screen, 100%, Fit Artboard on Screen.
+pub const NAV_COMMANDS: [&str; 5] = ["view.zoomIn", "view.zoomOut", "view.fitOnScreen", "view.actualPixels", "view.fitArtboardOnScreen"];
 
 /// The key press a clipboard event stands for outside text fields, with `mods` held: Copy, Cut
 /// and Paste are ⌘C, ⌘X and ⌘V (with ⇧/⌥ as held). On Windows egui-winit also sends Cut for

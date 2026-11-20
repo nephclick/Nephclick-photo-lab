@@ -20,6 +20,7 @@ use craft::imaging::ui::layer_style::{ContourEditorDialog, HostedLayerStyle, Lay
 use craft::theme::Srgba;
 use craft::ui::contract::Entry;
 use craft::ui::dialog::{DialogId, DialogResult};
+use craft::ui::list::ThumbAspect;
 use craft::ui::patterns::presets::{PresetRow, ThumbInfo};
 use craft::ui::primitives::ContentPainterCx;
 use craft::ui::primitives::textures::TextureCache;
@@ -564,10 +565,20 @@ pub fn pattern_list(app: &NephclickPhotoLabApp) -> Vec<PresetRow<String>> {
     let mut seen = HashSet::new();
     let doc_pats = app.session.active().map(|d| d.doc.patterns.clone()).unwrap_or_default();
     doc_pats
-        .iter()
-        .chain(app.session.patterns.items.iter())
+        .into_iter()
+        .chain(app.session.patterns.items.iter().cloned())
         .filter(|p| seen.insert(p.id.clone()))
-        .map(|p| PresetRow::item(p.id.clone(), p.display_name(), 0))
+        .map(|p| {
+            let name = p.display_name().to_string();
+            let pat = p.clone();
+            PresetRow::item(p.id.clone(), name.clone(), 0)
+                .caption(name.clone())
+                .tooltip(name)
+                .preview(ThumbAspect::SQUARE, move |cx, rect| {
+                    let texture = crate::panels::preset_browser::pattern_texture(cx.painter.ctx(), &pat);
+                    cx.picture(texture, rect, Rect::from_min_max(Pos2::ZERO, pos2(1.0, 1.0)), 0.0);
+                })
+        })
         .collect()
 }
 

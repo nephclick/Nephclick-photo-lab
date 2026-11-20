@@ -169,6 +169,7 @@ fn converter(app: &NephclickPhotoLabApp) -> CmykConverter {
 
 /// Opens `dialog` for `target` with the app's picker features, under `parent` when it has one.
 fn launch(app: &mut NephclickPhotoLabApp, dialog: ColorPickerDialog, parent: Option<DialogId>, target: PickTarget) -> DialogId {
+    let _picker_choice = app.session.prefs().general.color_picker;
     let mut dialog = dialog.cmyk(&converter(app)).canvas_samples(true).eyedropper(true).add_to_swatches(true).instance(target.identity());
     if let Some(idx) = app.session.active_index() {
         dialog = dialog.canvas(crate::canvas::document_display::CanvasHost::primary(app, idx).canvas_id());

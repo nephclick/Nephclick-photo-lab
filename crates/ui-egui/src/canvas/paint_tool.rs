@@ -459,7 +459,7 @@ impl CanvasTool for PaintTool<'_> {
     fn cursor(&self, cx: &ToolContext<'_>) -> Cursor {
         self.scope.with_app(|app| {
             if app.brush_resize.active() {
-                return Cursor::Painted(PaintedCursor::Hidden);
+                return crate::brush_cursor::cursor(app, cx);
             }
             let tool = app.ui.tool;
             // ⌥ on the Mixer Brush loads paint: its sample target, or the crosshair for precise cursors.

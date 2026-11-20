@@ -53,8 +53,8 @@ pub use noreplace::{PublishNewError, rename_noreplace, write_noreplace};
 pub use read::{read_file, read_file_limited};
 pub use store::{ByteSource, DEFAULT_REVERIFY_BUDGET, PcraftWriter, SaveStats, read_entry};
 
-/// File extension of the native format (`"npl"`).
-pub const EXTENSION: &str = "npl";
+/// File extension of the native format (`"nplab"`).
+pub const EXTENSION: &str = "nplab";
 /// File extension of the native template format (`"tnpl"`).
 pub const TEMPLATE_EXTENSION: &str = "tnpl";
 /// Legacy file extension of the native format (`"pcraft"`).
@@ -63,7 +63,7 @@ pub const LEGACY_EXTENSION: &str = "pcraft";
 /// Whether a given file extension matches the native project or template formats.
 pub fn is_native_extension(ext: &str) -> bool {
     let clean = ext.trim_start_matches('.').to_ascii_lowercase();
-    clean == EXTENSION || clean == TEMPLATE_EXTENSION || clean == LEGACY_EXTENSION
+    clean == EXTENSION || clean == "npl" || clean == TEMPLATE_EXTENSION || clean == LEGACY_EXTENSION
 }
 
 #[derive(Debug, thiserror::Error)]
