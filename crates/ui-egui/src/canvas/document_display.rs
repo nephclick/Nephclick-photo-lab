@@ -320,7 +320,12 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, view: &mut
         selection_controls(app, ui, body.rect, idx, &label);
         // The Levels clipping display, over the picture and under the controls: it joins the canvas's picture slot
         // after the picture.
-        let clipping = if primary { crate::levels_clipping::shapes(app, ctx, &space.view, idx) } else { Vec::new() };
+        let mut clipping = if primary { crate::levels_clipping::shapes(app, ctx, &space.view, idx) } else { Vec::new() };
+        // View › Split View: the opened image over its side of the divider, and the divider.
+        if primary {
+            clipping.extend(super::split_view::shapes(app, ctx, &space.view, idx));
+            super::split_view::controls(app, ctx, &space.view, body.rect, idx);
+        }
         // Color Range's Selection Preview: the dialog's proxy mask, drawn by the selection overlay without ants.
         if let Some(preview) = crate::color_range_ui::selection_preview(app, ctx) {
             SelectionOverlay::new(format!("{label} Selection Preview"), &*preview.mask)

@@ -26,6 +26,7 @@ macro_rules! tl {
 }
 pub mod ai_ui;
 pub mod ai_models_ui;
+pub mod save_format_ui;
 pub mod palette_panel;
 mod brush_mode_menu;
 pub mod canvas;

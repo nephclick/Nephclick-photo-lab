@@ -26,6 +26,7 @@ pub enum Task {
     Idea,
     Fill,
     Test,
+    LightPose,
 }
 
 /// A finished request.
@@ -34,6 +35,7 @@ enum Done {
     Idea(Result<Idea, AiError>),
     Fill { result: Result<Vec<u8>, AiError>, doc: DocId, rect: Rect, label: String },
     Test(Result<String, AiError>),
+    LightPose { result: Result<Vec<u8>, AiError>, doc: DocId, rect: Rect },
 }
 
 /// A line under a field: what happened, and whether it was a failure.
@@ -81,6 +83,10 @@ pub struct AiUi {
     pub models_status: Option<(f64, serde_json::Value)>,
     /// Object Selection's text prompt ("the red car").
     pub select_prompt: String,
+    /// Light Pose (AI Generate)'s window is open, its prompt, and the last outcome.
+    pub light_pose_window: bool,
+    pub light_pose_prompt: String,
+    pub light_pose_note: Option<Note>,
 }
 
 /// The API key field of the AI Models page, and what its buttons asked for.
@@ -120,6 +126,9 @@ impl Default for AiUi {
             models_window: false,
             models_status: None,
             select_prompt: String::new(),
+            light_pose_window: false,
+            light_pose_prompt: String::new(),
+            light_pose_note: None,
         }
     }
 }
@@ -294,6 +303,7 @@ fn fallback(task: Task) -> Done {
         Task::Idea => Done::Idea(Err(e)),
         Task::Test => Done::Test(Err(e)),
         Task::Fill => Done::Fill { result: Err(e), doc: DocId(0), rect: Rect::EMPTY, label: String::new() },
+        Task::LightPose => Done::LightPose { result: Err(e), doc: DocId(0), rect: Rect::EMPTY },
     }
 }
 
@@ -461,6 +471,13 @@ pub fn poll(app: &mut NephclickPhotoLabApp) {
                     Err(e) => Note::err(e.to_string()),
                 });
             }
+            Done::LightPose { result, doc, rect } => {
+                app.ai.busy.retain(|t| *t != Task::LightPose);
+                app.ai.light_pose_note = Some(match result.map_err(|e| e.to_string()).and_then(|png| place_light_pose(app, doc, rect, &png)) {
+                    Ok(()) => Note::ok("Added as a new Light Pose layer."),
+                    Err(e) => Note::err(e),
+                });
+            }
             Done::Fill { result, doc, rect, label } => {
                 app.ai.busy.retain(|t| *t != Task::Fill);
                 app.ai.fill_note = Some(match result.map_err(|e| e.to_string()).and_then(|png| place_fill(app, doc, rect, &label, &png)) {
@@ -472,6 +489,113 @@ pub fn poll(app: &mut NephclickPhotoLabApp) {
                 });
             }
         }
+    }
+}
+
+/// Layer › New › Light Pose Layer (AI Generate): sends the whole picture (at most [`FILL_SIDE`] on a side) with the
+/// window's lighting description to the image model; the relit picture lands as a new layer.
+pub fn start_light_pose(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
+    let prepared = (|| -> Result<(Vec<u8>, DocId, Rect), String> {
+        let st = app.session.active().ok_or("Open a document first.")?;
+        if st.doc.mode != nephclick_photolab_color::ColorMode::Rgb {
+            return Err("Light Pose works on RGB documents (Image › Mode › RGB Color).".into());
+        }
+        let area = st.doc.bounds();
+        let image = nephclick_photolab_compose::thumbnail(&st.doc, FILL_SIDE);
+        let encoded = nephclick_photolab_codecs::Image::from_u8(image.width, image.height, nephclick_photolab_codecs::ChannelLayout::Rgba, image.pixels)
+            .and_then(|img| nephclick_photolab_codecs::encode(&img, nephclick_photolab_codecs::Format::Png, &Default::default()))
+            .map_err(|e| format!("Could not prepare the picture: {e}"))?;
+        Ok((encoded, st.doc.id, area))
+    })();
+    let (png, doc, rect) = match prepared {
+        Ok(p) => p,
+        Err(e) => {
+            app.ai.light_pose_note = Some(Note::err(e));
+            return;
+        }
+    };
+    let prompt = app.ai.light_pose_prompt.trim().to_string();
+    #[cfg(not(target_arch = "wasm32"))]
+    let work = move |c: &Config| Done::LightPose { result: nephclick_photolab_ai::client::relight(c, &png, &prompt), doc, rect };
+    #[cfg(target_arch = "wasm32")]
+    let work = move |_: &Config| Done::LightPose { result: { let _ = (&png, &prompt); Err(AiError::Unsupported(String::new())) }, doc, rect };
+    if spawn(app, ctx, Task::LightPose, work, |app, e| app.ai.light_pose_note = Some(Note::err(e))) {
+        app.ai.light_pose_note = Some(Note::ok("Relighting… this can take a little while."));
+    }
+}
+
+/// Places Light Pose's AI image over the whole of `doc`, if it is still open.
+fn place_light_pose(app: &mut NephclickPhotoLabApp, doc: DocId, rect: Rect, image: &[u8]) -> Result<(), String> {
+    use base64::Engine as _;
+    let index = app.session.documents().iter().position(|d| d.doc.id == doc).ok_or("The document was closed before the picture arrived.")?;
+    app.session.set_active(index);
+    let params = json!({
+        "image": base64::engine::general_purpose::STANDARD.encode(image),
+        "rect": [rect.x0, rect.y0, rect.width(), rect.height()],
+        "name": "Light Pose (AI)",
+        "maskToSelection": false,
+    });
+    app.run(nephclick_photolab_engine::image_layer_cmds::ID, params).map(|_| ())
+}
+
+/// The Light Pose (AI Generate) window while it is open: the lighting description and Generate.
+pub fn show_light_pose(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
+    if !app.ai.light_pose_window {
+        return;
+    }
+    let mut open = true;
+    let mut go = false;
+    let busy = app.is_light_pose_busy();
+    let mut prompt = std::mem::take(&mut app.ai.light_pose_prompt);
+    let note = app.ai.light_pose_note.clone();
+    egui::Window::new(tl!("Light Pose Layer (AI Generate)"))
+        .id(egui::Id::unique("light-pose-ai"))
+        .open(&mut open)
+        .collapsible(true)
+        .resizable(true)
+        .default_width(420.0)
+        .show(ctx, |ui| {
+            ui.label(tl!("Describe the new light. The AI service in Preferences › AI Models rebuilds the photo's lighting, highlights and shadows; the result is added as a new layer."));
+            ui.add_space(6.0);
+            ui.add(egui::TextEdit::multiline(&mut prompt).hint_text(tl!("e.g. warm sunset light from the left, long soft shadows")).desired_rows(3).desired_width(f32::INFINITY));
+            ui.horizontal(|ui| {
+                for example in [tl!("Golden hour from the left"), tl!("Cool moonlight from above"), tl!("Studio key light, soft fill")] {
+                    if ui.small_button(example).clicked() {
+                        prompt = example.to_string();
+                    }
+                }
+            });
+            ui.add_space(6.0);
+            ui.horizontal(|ui| {
+                if ui.add_enabled(!busy, egui::Button::new(if busy { tl!("Relighting…") } else { tl!("Generate") })).clicked() {
+                    go = true;
+                }
+                ui.weak(tl!("For offline relighting, use Layer › New › Light Pose Layer…"));
+            });
+            if let Some(note) = &note {
+                if note.error {
+                    ui.colored_label(ui.visuals().error_fg_color, &note.text);
+                } else {
+                    ui.label(&note.text);
+                }
+            }
+        });
+    if prompt.chars().count() > nephclick_photolab_ai::MAX_PROMPT {
+        prompt = prompt.chars().take(nephclick_photolab_ai::MAX_PROMPT).collect();
+    }
+    app.ai.light_pose_prompt = prompt;
+    if go {
+        start_light_pose(app, ctx);
+    }
+    if !open {
+        app.ai.light_pose_window = false;
+    }
+}
+
+impl NephclickPhotoLabApp {
+    /// Whether a Light Pose (AI Generate) request is running.
+    fn is_light_pose_busy(&self) -> bool {
+        self.ai.is_busy(Task::LightPose)
     }
 }
 

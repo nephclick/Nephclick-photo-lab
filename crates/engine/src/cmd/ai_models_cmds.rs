@@ -17,7 +17,7 @@ fn always(_: &Session) -> std::result::Result<(), String> {
 fn pack(cmd: &str, p: &Value) -> Result<nephclick_photolab_ai::model_install::Pack> {
     let name = p.get("pack").and_then(Value::as_str).unwrap_or("");
     nephclick_photolab_ai::model_install::Pack::parse(name)
-        .ok_or_else(|| EngineError::BadParams { cmd: cmd.to_owned(), msg: "\"pack\" must be \"subject\" or \"prompt\"".to_owned() })
+        .ok_or_else(|| EngineError::BadParams { cmd: cmd.to_owned(), msg: "\"pack\" must be \"subject\", \"prompt\" or \"depth\"".to_owned() })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -69,7 +69,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "AI Selection Models…",
             menu: &["Select"],
             shortcut: None,
-            params: r##"{} → {"modelsDir":str,"subject":{"installed":bool,"bytes":n},"prompt":{"installed":bool,"models":[str]},"progress":{"running":"subject"|"prompt"|null,"stage":str,"done":bytes,"total":bytes,"error":str?,"finished":"subject"|"prompt"|null}} (the menu opens the models window)"##,
+            params: r##"{} → {"modelsDir":str,"subject":{"installed":bool,"bytes":n},"prompt":{"installed":bool,"models":[str]},"depth":{"installed":bool,"bytes":n},"progress":{"running":"subject"|"prompt"|"depth"|null,"stage":str,"done":bytes,"total":bytes,"error":str?,"finished":"subject"|"prompt"|"depth"|null}} (the menu opens the models window)"##,
             enabled: always,
             run: status,
             journal: false,
@@ -79,7 +79,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Install AI Selection Models",
             menu: &[],
             shortcut: None,
-            params: r##"{"pack":"subject|prompt"} (subject: the offline Select Subject model, about 170 MB; prompt: Python, PyTorch, Transformers, SAM 2.1 Tiny and Grounding DINO Tiny for click, rectangle and text selection, about 2 GB. Runs in the background: poll select.aiModels)"##,
+            params: r##"{"pack":"subject|prompt|depth"} (subject: the offline Select Subject model, about 170 MB; depth: the Light Pose depth model, about 67 MB; prompt: Python, PyTorch, Transformers, SAM 2.1 Tiny and Grounding DINO Tiny for click, rectangle and text selection, about 2 GB. Runs in the background: poll select.aiModels)"##,
             enabled: always,
             run: install,
             journal: false,
@@ -99,7 +99,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Remove AI Selection Models",
             menu: &[],
             shortcut: None,
-            params: r##"{"pack":"subject|prompt"}"##,
+            params: r##"{"pack":"subject|prompt|depth"}"##,
             enabled: always,
             run: remove,
             journal: false,

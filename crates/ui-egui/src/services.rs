@@ -146,6 +146,8 @@ pub struct ExportSettings {
     /// Read and embed the files linked smart objects name ([`nephclick_photolab_io::ExportOptions::read_linked_files`]).
     /// Off for automation saves, which are granted only their target.
     pub read_linked_files: bool,
+    /// `.pdf`: write an editable PDF (the layered document embedded) instead of a plain one. Save sets it.
+    pub pdf_editable: bool,
 }
 
 impl Default for ExportSettings {
@@ -171,6 +173,7 @@ impl Default for ExportSettings {
             document_path: None,
             pcraft_cache: None,
             read_linked_files: true,
+            pdf_editable: false,
         }
     }
 }
@@ -204,6 +207,7 @@ impl ExportSettings {
         opts.document_path = self.document_path.clone();
         opts.pcraft_cache = self.pcraft_cache.clone();
         opts.read_linked_files = self.read_linked_files;
+        opts.pdf_editable = self.pdf_editable;
         opts
     }
 }

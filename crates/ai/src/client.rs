@@ -63,6 +63,35 @@ pub fn fill(config: &Config, png: &[u8], request: &str) -> Result<Vec<u8>, AiErr
     if request.len() > crate::MAX_PROMPT {
         return Err(AiError::Invalid(format!("The prompt is too long (at most {} characters).", crate::MAX_PROMPT)));
     }
+    edit_image(config, png, &fill_prompt(request))
+}
+
+/// The instructions sent with Light Pose's AI Generate: the whole photo, relit as `request` describes.
+pub fn relight_prompt(request: &str) -> String {
+    format!(
+        "Relight this photograph: {request}. Rebuild the three-dimensional lighting: the direction, colour and softness \
+         of the light, the highlights and the cast shadows, following the shapes in the scene. Keep the people, objects, \
+         composition, framing, size and identity exactly the same; change only the lighting. Return only the relit image."
+    )
+}
+
+/// Light Pose's AI Generate: sends the photo (`png`) with the lighting `request` to the image model and returns the
+/// relit image's bytes.
+pub fn relight(config: &Config, png: &[u8], request: &str) -> Result<Vec<u8>, AiError> {
+    config.ready()?;
+    if png.is_empty() || png.len() > MAX_IMAGE_BYTES {
+        return Err(AiError::Invalid("The image is too large to send.".into()));
+    }
+    let request = request.trim();
+    let request = if request.is_empty() { "soft natural light from the upper left" } else { request };
+    if request.len() > crate::MAX_PROMPT {
+        return Err(AiError::Invalid(format!("The prompt is too long (at most {} characters).", crate::MAX_PROMPT)));
+    }
+    edit_image(config, png, &relight_prompt(request))
+}
+
+/// Sends `png` with the instructions `text` to the image model and returns the image it answered.
+fn edit_image(config: &Config, png: &[u8], text: &str) -> Result<Vec<u8>, AiError> {
     let data_url = format!("data:image/png;base64,{}", base64::engine::general_purpose::STANDARD.encode(png));
     let body = json!({
         "model": config.image_model.trim(),
@@ -70,7 +99,7 @@ pub fn fill(config: &Config, png: &[u8], request: &str) -> Result<Vec<u8>, AiErr
         "messages": [{
             "role": "user",
             "content": [
-                {"type": "text", "text": fill_prompt(request)},
+                {"type": "text", "text": text},
                 {"type": "image_url", "image_url": {"url": data_url}},
             ],
         }],

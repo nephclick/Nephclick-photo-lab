@@ -49,7 +49,7 @@ fn open_form(app: &mut NephclickPhotoLabApp, id: &str, title: &str, params: Vec<
     let title = crate::dialogs::filter_dialog::title_of(title);
     let key = id.to_owned();
     crate::dialogs::params::open_param(app, id, fields, fixed, move |fields: &mut DialogFields| {
-        ParamDialog::command(key.clone(), title.clone(), params.clone()).values(Bind::bound(fields))
+        ParamDialog::command(key.clone(), title.clone(), params.clone()).previews(crate::filter_dialog::previews(&key)).values(Bind::bound(fields))
     })
 }
 

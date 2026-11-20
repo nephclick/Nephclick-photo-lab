@@ -257,6 +257,10 @@ impl NephclickPhotoLabApp {
         jobs_ui::dialog(self, ui);
         // Select › AI Selection Models…, while it is open.
         crate::ai_models_ui::show(self, &ctx);
+        // File › Save As's format step, while it is open.
+        crate::save_format_ui::show(self, &ctx);
+        // Layer › New › Light Pose Layer (AI Generate), while it is open.
+        crate::ai_ui::show_light_pose(self, &ctx);
         updates_ui::show(self, &ctx);
         // The Keyboard Shortcuts dialog draws while its session is open.
         prefs_ui::show_shortcuts(self, ui);

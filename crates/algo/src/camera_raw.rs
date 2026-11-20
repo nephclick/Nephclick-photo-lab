@@ -675,6 +675,11 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, inputs: &
             }
         });
     }
+    // 9b. Eye Fix: red pupils (and animals' bright reflections) at the spots the user clicked, before the geometry
+    // moves them.
+    if !p.red_eyes.is_empty() {
+        eye_fix(px, w, h, p);
+    }
     // 10. Geometry (perspective, distortion, transform).
     if geometry_active(p) {
         geometry_warp(px, w, h, p);
@@ -683,6 +688,55 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, inputs: &
         for q in px.iter_mut() {
             for c in 0..3 {
                 q[c] = q[c].clamp(0.0, 1.0);
+            }
+        }
+    }
+}
+
+/// Eye Fix on `px` (`w` × `h`): in each spot's pupil (its circle scaled by Pupil Size, feathered at the rim), a red
+/// eye's red channel falls to its green and blue and the pupil darkens by Darken; an animal's eye has its bright
+/// reflection turned dark grey. Spots are fractions of the picture, so a proxy and the full image agree.
+fn eye_fix(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw) {
+    if w == 0 || h == 0 {
+        return;
+    }
+    let pupil = 0.4 + 0.6 * (p.eye_pupil / 100.0).clamp(0.0, 1.0);
+    let darken = 1.0 - 0.75 * (p.eye_darken / 100.0).clamp(0.0, 1.0);
+    for spot in p.red_eyes.iter().take(craft::imaging::raw::MAX_EYE_SPOTS) {
+        let (cx, cy) = (spot.x * w as f32, spot.y * h as f32);
+        let core = (spot.radius * w as f32 * pupil).max(0.5);
+        if !(cx.is_finite() && cy.is_finite() && core.is_finite()) {
+            continue;
+        }
+        let y0 = (cy - core).floor().max(0.0) as usize;
+        let y1 = ((cy + core).ceil().max(0.0) as usize).min(h - 1);
+        let x0 = (cx - core).floor().max(0.0) as usize;
+        let x1 = ((cx + core).ceil().max(0.0) as usize).min(w - 1);
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                let d = (((x as f32 + 0.5 - cx).powi(2) + (y as f32 + 0.5 - cy).powi(2)).sqrt()) / core;
+                if d >= 1.0 {
+                    continue;
+                }
+                let feather = 1.0 - smoothstep(0.7, 1.0, d);
+                let Some(q) = px.get_mut(y * w + x) else { continue };
+                let (r, g, b) = (q[0], q[1], q[2]);
+                if spot.pet {
+                    let l = luma([r, g, b]).clamp(0.0, 1.0);
+                    let m = feather * smoothstep(0.3, 0.7, l);
+                    let t = 0.08 * darken;
+                    for (c, v) in [t, t, t].into_iter().enumerate() {
+                        q[c] += (v - q[c]) * m;
+                    }
+                } else {
+                    let base = (g + b) * 0.5;
+                    let redness = if r > 1e-4 { ((r - base) / r).clamp(0.0, 1.0) } else { 0.0 };
+                    let m = feather * smoothstep(0.08, 0.35, redness);
+                    let target = [base * darken, g * darken, b * darken];
+                    for (c, v) in target.into_iter().enumerate() {
+                        q[c] += (v - q[c]) * m;
+                    }
+                }
             }
         }
     }
