@@ -269,8 +269,12 @@ const TOOLKIT: &str = "Nephclick PhotoLab";
 /// (`x:xmptk`). Lightroom, Bridge and Camera Raw put their own toolkit there when they write a
 /// file, so a sidecar another application touched since reads false. Never panics.
 pub fn is_nephclick_photolab_xmp(bytes: &[u8]) -> bool {
-    toolkit(bytes).as_deref() == Some(TOOLKIT)
+    toolkit(bytes).is_some_and(|tk| tk == TOOLKIT || tk == LEGACY_TOOLKIT)
 }
+
+/// The marker sidecars carried when the product name was written without its space: still ours, so Open keeps
+/// updating them instead of leaving them as another application's.
+const LEGACY_TOOLKIT: &str = "NephclickPhotoLab";
 
 /// Write `params` as a Camera Raw settings file Photoshop's Load Settings… reads.
 pub fn save(params: &CameraRaw) -> String {
@@ -452,6 +456,12 @@ mod tests {
         let r = load(&mut p, xmp).unwrap();
         assert_eq!(p, before);
         assert_eq!(r.ignored, vec!["Contrast2012".to_string(), "ToneCurvePV2012".to_string()]);
+    }
+
+    #[test]
+    fn the_marker_without_the_space_is_ours_too() {
+        assert!(is_nephclick_photolab_xmp(br#"<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="NephclickPhotoLab"/>"#));
+        assert!(!is_nephclick_photolab_xmp(br#"<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Adobe XMP Core 7.0"/>"#));
     }
 
     #[test]

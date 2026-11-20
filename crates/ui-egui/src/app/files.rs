@@ -264,8 +264,9 @@ impl NephclickPhotoLabApp {
                     Some("kra" | "krz") => "ora",
                     Some("tnpl") => nephclick_photolab_format::TEMPLATE_EXTENSION,
                     Some("npl" | "nplab" | "pcraft") => nephclick_photolab_format::EXTENSION,
-                    Some(_) => "psd",
-                    None => nephclick_photolab_format::EXTENSION,
+                    // A new document suggests Photoshop's format, as Photoshop does; the Save As format step still
+                    // lists Nephclick PhotoLab's own .nplab first.
+                    Some(_) | None => "psd",
                 };
                 std::path::Path::new(&st.doc.name).with_extension(ext).to_string_lossy().into_owned()
             }
