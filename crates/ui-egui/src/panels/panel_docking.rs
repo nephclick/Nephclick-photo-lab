@@ -268,7 +268,16 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, panels_hid
     };
     #[cfg(test)]
     probe::record_windows(&ctx, &app.ui.docking.layout, &output.windows);
-    let DockAreaOutput { actions, requested, events, error, edit, window_files, .. } = output;
+    let DockAreaOutput { actions, requested, events, error, edit, window_files, picked, .. } = output;
+    // A tab picked in a collapsed column's flyout (History beside Actions, say): the flyout shows the panel it is open
+    // on, so it follows the pick to the tab the user chose.
+    if let Some(panel) = picked
+        && app.ui.flyout.is_some()
+        && app.ui.flyout.as_ref() != Some(&panel)
+        && app.ui.docking.layout.opens_in_flyout(&panel)
+    {
+        app.ui.flyout = Some(panel);
+    }
     if let Some(error) = error {
         app.ui.status = format!("{}: {}", tl!("Invalid panel layout"), error.error);
     }

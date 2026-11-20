@@ -75,6 +75,12 @@ pub struct AiUi {
     /// Preferences window draws it from a copy of what it reads of the app, so the field is shared with that copy.
     pub key_field: std::sync::Arc<std::sync::Mutex<KeyField>>,
     pub key_note: Option<Note>,
+    /// Select › AI Selection Models… is open.
+    pub models_window: bool,
+    /// What `select.aiModels` last answered, and when (the window's poll).
+    pub models_status: Option<(f64, serde_json::Value)>,
+    /// Object Selection's text prompt ("the red car").
+    pub select_prompt: String,
 }
 
 /// The API key field of the AI Models page, and what its buttons asked for.
@@ -111,6 +117,9 @@ impl Default for AiUi {
             fill_note: None,
             key_field: Default::default(),
             key_note: None,
+            models_window: false,
+            models_status: None,
+            select_prompt: String::new(),
         }
     }
 }

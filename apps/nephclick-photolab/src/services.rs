@@ -551,6 +551,19 @@ pub fn native(automation: Option<nephclick_photolab_automation::AuthorizedWorksp
                 svg_clipboard_source(clipboard_text(cb.get_text())?)
             })
         }),
+        clipboard_get_text: Some({
+            let clip = clip.clone();
+            Box::new(move || {
+                crate::crash_guard::guard("Paste", || {
+                    let mut slot = clip.try_borrow_mut().map_err(|_| "clipboard is busy".to_string())?;
+                    let cb = match slot.as_mut() {
+                        Some(c) => c,
+                        None => slot.insert(arboard::Clipboard::new().map_err(|e| e.to_string())?),
+                    };
+                    clipboard_text(cb.get_text())
+                })
+            })
+        }),
         clipboard_unreadable: Some(Box::new(move || clip_unreadable.get())),
         photoshop_shortcuts: Some(Box::new(|| crate::photoshop_settings::live_keyboard_shortcuts(&|k| std::env::var_os(k)))),
         load_gpu_memo: Some(Box::new(load_gpu_memo_text)),

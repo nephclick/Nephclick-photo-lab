@@ -641,6 +641,21 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, inputs: &
     if p.lens_blur_amount > 0.0 {
         lens_blur(px, w, h, p);
     }
+    // 8c. Color LUT: the look the settings name, from the LUT library, blended by its amount. A LUT
+    // the library does not hold leaves the picture as it is.
+    if lut_on(p)
+        && let Some(table) = crate::raw_luts::get(&p.lut)
+    {
+        let amount = (p.lut_amount / 100.0).clamp(0.0, 1.0);
+        par_rows(px, w, 1, |_, row| {
+            for q in row.iter_mut() {
+                let out = table.sample([q[0], q[1], q[2]]);
+                for c in 0..3 {
+                    q[c] += (out[c] - q[c]) * amount;
+                }
+            }
+        });
+    }
     // 9. Effects.
     if p.vignette_amount != 0.0 {
         vignette(px, w, h, p);
@@ -671,6 +686,11 @@ pub fn develop(px: &mut [[f32; 4]], w: usize, h: usize, p: &CameraRaw, inputs: &
             }
         }
     }
+}
+
+/// Whether the settings apply a LUT: one is named and its amount is above zero.
+pub(crate) fn lut_on(p: &CameraRaw) -> bool {
+    !p.lut.is_empty() && p.lut_amount.is_finite() && p.lut_amount > 0.0
 }
 
 /// The end of stage 3 on one pixel: Contrast (strength `k_con`) on the luminance `lv` that

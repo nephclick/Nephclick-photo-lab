@@ -14,9 +14,6 @@ use craft::keymap::import::kys;
 use craft::keymap::{Builtins, CommandRef, ImportOptions, Keymap, NoneDefined, Overrides, Profiles, Scopes, reserved};
 use craft::menu::Row;
 use craft::menu::shortcuts::{Area, ConflictMode, DialogState, DialogTab, Format, Options, Outcome, ShortcutWords, ShortcutsDialog, kys_error_text};
-use craft::ui::choice::Checkbox;
-use craft::ui::contract::{Bind, Entry, Props as _, Show as _};
-use craft::ui::pickers::Select;
 use craft::ui::runtime::env::Env;
 use craft::ui::runtime::windows;
 use nephclick_photolab_engine::keymap_defs;
@@ -50,16 +47,26 @@ pub(crate) struct ShortcutsSession {
     pub(crate) remembered: BTreeMap<String, CommandRef>,
 }
 
-/// What the Menus tab edits: the hidden items and the colour of each item, by command id.
+/// What the Menus tab edits: the hidden items and the colour of each item, by command id; and
+/// what it shows: the menu picked in its sidebar and the search text.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct MenusDraft {
     pub(crate) hidden: BTreeSet<String>,
     pub(crate) colors: BTreeMap<String, String>,
+    /// The top-level menu the sidebar shows ("File", "Edit", …); empty for the first.
+    pub(crate) menu: String,
+    /// The search over every menu's items; empty shows the picked menu.
+    pub(crate) search: String,
 }
 
 impl MenusDraft {
     fn of(menus: &MenuCustomization) -> Self {
-        MenusDraft { hidden: menus.hidden.iter().cloned().collect(), colors: menus.colors.clone() }
+        MenusDraft { hidden: menus.hidden.iter().cloned().collect(), colors: menus.colors.clone(), menu: String::new(), search: String::new() }
+    }
+
+    /// Whether the edits (not the view) differ from `other`'s.
+    fn edits_differ(&self, other: &MenusDraft) -> bool {
+        self.hidden != other.hidden || self.colors != other.colors
     }
 }
 
@@ -275,53 +282,203 @@ fn menus_tab<'a>(rows: &'a [Row], draft: &'a mut MenusDraft) -> DialogTab<'a> {
     DialogTab::new("menus", tl!("Menus").to_string(), move |ui| menus_body(ui, rows, &mut *draft))
 }
 
-/// The Menus tab's body; true when the draft changed. `rows` are the menu items before the
+/// Longest search text the Menus tab keeps.
+const MAX_MENU_SEARCH: usize = 120;
+
+/// The width of the Menus tab's sidebar of menus.
+const MENU_SIDEBAR_WIDTH: f32 = 168.0;
+
+/// The Menus tab's body; true when the draft's edits changed. `rows` are the menu items before the
 /// customization, so a hidden item is listed here to be shown again.
+///
+/// A search field and the Show All and Clear Colors buttons over a sidebar of the top-level menus
+/// (each with the number of its items hidden) beside the picked menu's items, grouped by submenu:
+/// a Visible check, the item's name (dimmed while hidden) and its colour. A search lists the
+/// matching items of every menu.
 fn menus_body(ui: &mut egui::Ui, rows: &[Row], draft: &mut MenusDraft) -> bool {
     let before = draft.clone();
-    if ui.button(tl!("Show All Menu Items")).clicked() {
-        draft.hidden.clear();
+    let items: Vec<&Row> = rows.iter().filter(|row| row.label != "---" && !row.path.is_empty()).collect();
+    let mut menus: Vec<&str> = Vec::new();
+    for row in &items {
+        if let Some(top) = row.path.first()
+            && !menus.contains(&top.as_str())
+        {
+            menus.push(top.as_str());
+        }
     }
-    let items: Vec<&Row> = rows.iter().filter(|row| row.label != "---").collect();
-    let colors: Vec<Entry<&'static str>> = COLORS.iter().map(|c| Entry::new(*c, *c)).collect();
-    let height = ui.spacing().interact_size.y;
-    // PLAN: the framework `Table` draws a value in each cell and cannot hold a Checkbox or a Select, so the rows are laid out by hand.
-    egui::ScrollArea::vertical().auto_shrink([false, false]).show_rows(ui, height, items.len(), |ui, range| {
-        for row in &items[range] {
-            let id = row.command.id.as_str();
-            ui.push_id(id, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(format!("{} › {}", row.path.join(" › "), row.label));
-                    // Items that can't be hidden (File › Close, Save…, Edit › Menus…) have no visibility
-                    // control at all, as in the reference application (#5096, #14335).
-                    if MenuCustomization::hideable(id) {
-                        let visible = !draft.hidden.contains(id);
-                        let shown = Checkbox::new(Bind::given(visible)).label(tl!("Visible").to_string()).show(ui);
-                        match shown.events.value() {
-                            Some(&true) => {
-                                draft.hidden.remove(id);
-                            }
-                            Some(&false) => {
-                                draft.hidden.insert(id.to_owned());
-                            }
-                            None => {}
-                        }
+    if !menus.contains(&draft.menu.as_str()) {
+        draft.menu = menus.first().map(|menu| (*menu).to_owned()).unwrap_or_default();
+    }
+    let visuals = ui.visuals().clone();
+
+    // The bar: search, then the buttons that act on every item.
+    ui.horizontal(|ui| {
+        let search = egui::TextEdit::singleline(&mut draft.search).hint_text(tl!("Search menu items")).desired_width(280.0);
+        ui.add(search);
+        if !draft.search.is_empty() && ui.small_button("×").on_hover_text(tl!("Clear the search")).clicked() {
+            draft.search.clear();
+        }
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            if ui.button(tl!("Clear Colors")).clicked() {
+                draft.colors.clear();
+            }
+            if ui.button(tl!("Show All Menu Items")).clicked() {
+                draft.hidden.clear();
+            }
+        });
+    });
+    if draft.search.chars().count() > MAX_MENU_SEARCH {
+        draft.search = draft.search.chars().take(MAX_MENU_SEARCH).collect();
+    }
+    ui.add_space(6.0);
+    let search = draft.search.trim().to_lowercase();
+    let footer = ui.spacing().interact_size.y + 6.0;
+    let height = (ui.available_height() - footer).max(120.0);
+
+    ui.horizontal_top(|ui| {
+        // The sidebar of menus.
+        egui::Frame::new().fill(visuals.faint_bg_color).corner_radius(6.0).inner_margin(6.0).show(ui, |ui| {
+            ui.set_width(MENU_SIDEBAR_WIDTH);
+            ui.set_height(height - 12.0);
+            egui::ScrollArea::vertical().id_salt("menus-sidebar").auto_shrink([false, false]).show(ui, |ui| {
+                for menu in &menus {
+                    let hidden = items.iter().filter(|row| row.path.first().is_some_and(|top| top == menu) && draft.hidden.contains(row.command.id.as_str())).count();
+                    let selected = search.is_empty() && draft.menu == *menu;
+                    let text = if hidden > 0 { format!("{menu}  ·  {hidden} {}", tl!("hidden")) } else { (*menu).to_owned() };
+                    let response = ui.add_sized([ui.available_width(), 26.0], egui::Button::selectable(selected, text));
+                    if response.clicked() {
+                        draft.menu = (*menu).to_owned();
+                        draft.search.clear();
                     }
-                    let current = draft.colors.get(id).map_or("none", String::as_str).to_owned();
-                    let current = COLORS.iter().copied().find(|c| *c == current).unwrap_or("none");
-                    let picked = Select::new(tl!("Color").to_string(), Bind::given(current), &colors).show(ui);
-                    if let Some(&color) = picked.events.value() {
-                        if color == "none" {
-                            draft.colors.remove(id);
-                        } else {
-                            draft.colors.insert(id.to_owned(), color.to_owned());
+                }
+            });
+        });
+        ui.add_space(8.0);
+        // The items of the picked menu, or of the search.
+        egui::Frame::new().stroke(visuals.widgets.noninteractive.bg_stroke).corner_radius(6.0).inner_margin(8.0).show(ui, |ui| {
+            ui.set_height(height - 16.0);
+            ui.set_width(ui.available_width());
+            let shown: Vec<&&Row> = items
+                .iter()
+                .filter(|row| {
+                    if search.is_empty() {
+                        row.path.first().is_some_and(|top| *top == draft.menu)
+                    } else {
+                        row.label.to_lowercase().contains(&search) || row.path.iter().any(|part| part.to_lowercase().contains(&search))
+                    }
+                })
+                .collect();
+            if shown.is_empty() {
+                ui.add_space(12.0);
+                ui.vertical_centered(|ui| ui.weak(tl!("No menu items match the search.")));
+                return;
+            }
+            egui::ScrollArea::vertical().id_salt("menus-items").auto_shrink([false, false]).show(ui, |ui| {
+                let mut group: Option<String> = None;
+                for row in shown {
+                    // A heading for each submenu (the menu itself when searching), as the menu bar groups them.
+                    let heading = if search.is_empty() { row.path.get(1..).unwrap_or_default().join(" › ") } else { row.path.join(" › ") };
+                    if group.as_deref() != Some(heading.as_str()) {
+                        if group.is_some() {
+                            ui.add_space(6.0);
                         }
+                        if !heading.is_empty() {
+                            ui.label(egui::RichText::new(&heading).small().strong().color(visuals.weak_text_color()));
+                        }
+                        group = Some(heading);
+                    }
+                    menu_item_row(ui, row, draft);
+                }
+            });
+        });
+    });
+
+    let hidden = draft.hidden.len();
+    let colored = draft.colors.len();
+    ui.horizontal(|ui| {
+        ui.weak(crate::i18n::fmt(tl!("{hidden} hidden · {colored} with a colour"), &[("hidden", &hidden.to_string()), ("colored", &colored.to_string())]));
+    });
+    draft.edits_differ(&before)
+}
+
+/// One item of the Menus tab: its Visible check, its name, and its colour.
+fn menu_item_row(ui: &mut egui::Ui, row: &Row, draft: &mut MenusDraft) {
+    let id = row.command.id.as_str();
+    ui.push_id(id, |ui| {
+        let height = ui.spacing().interact_size.y + 4.0;
+        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), height), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+            let visible = !draft.hidden.contains(id);
+            // Items that can't be hidden (File › Close, Save…, Edit › Menus…) have no visibility
+            // control at all, as in the reference application (#5096, #14335).
+            if MenuCustomization::hideable(id) {
+                let mut checked = visible;
+                if ui.checkbox(&mut checked, "").on_hover_text(tl!("Visible")).changed() {
+                    if checked {
+                        draft.hidden.remove(id);
+                    } else {
+                        draft.hidden.insert(id.to_owned());
+                    }
+                }
+            } else {
+                ui.add_space(ui.spacing().interact_size.y + ui.spacing().item_spacing.x);
+            }
+            let current = draft.colors.get(id).map_or("none", String::as_str).to_owned();
+            let current = COLORS.iter().copied().find(|c| *c == current).unwrap_or("none");
+            if let Some(tint) = crate::menus::menu_tint(current) {
+                let (rect, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
+                ui.painter().circle_filled(rect.center(), 5.0, tint);
+            }
+            let mut name = egui::RichText::new(&row.label);
+            if !visible {
+                name = name.weak().strikethrough();
+            }
+            ui.label(name);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let mut picked = current;
+                egui::ComboBox::from_id_salt("menu-color").width(110.0).selected_text(color_name(current)).show_ui(ui, |ui| {
+                    for color in COLORS {
+                        ui.horizontal(|ui| {
+                            match crate::menus::menu_tint(color) {
+                                Some(tint) => {
+                                    let (rect, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
+                                    ui.painter().circle_filled(rect.center(), 5.0, tint);
+                                }
+                                None => {
+                                    ui.add_space(10.0 + ui.spacing().item_spacing.x);
+                                }
+                            }
+                            ui.selectable_value(&mut picked, color, color_name(color));
+                        });
                     }
                 });
+                if picked != current {
+                    if picked == "none" {
+                        draft.colors.remove(id);
+                    } else {
+                        draft.colors.insert(id.to_owned(), picked.to_owned());
+                    }
+                }
+                if let Some(shortcut) = &row.shortcut {
+                    ui.weak(shortcut.to_string()).on_hover_text(tl!("Shortcut"));
+                }
             });
-        }
+        });
     });
-    *draft != before
+}
+
+/// The shown name of an Edit › Menus colour.
+fn color_name(color: &str) -> String {
+    match color {
+        "none" => tl!("None").to_string(),
+        "red" => tl!("Red").to_string(),
+        "orange" => tl!("Orange").to_string(),
+        "yellow" => tl!("Yellow").to_string(),
+        "green" => tl!("Green").to_string(),
+        "blue" => tl!("Blue").to_string(),
+        "violet" => tl!("Violet").to_string(),
+        "gray" => tl!("Gray").to_string(),
+        other => other.to_owned(),
+    }
 }
 
 /// Test hook: adds `binding` to `command` in the open dialog's draft keymap, as the dialog's own edit does.

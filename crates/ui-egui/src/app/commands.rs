@@ -162,8 +162,14 @@ impl NephclickPhotoLabApp {
                     notices::clipboard_unreadable(self);
                     return Ok(serde_json::json!({"pasted": false}));
                 }
-                // Enabled on the strength of the OS clipboard, which held no image: a quiet no-op.
-                let message = "Nothing to paste: the clipboard holds no image";
+                // No image: text copied here or in another app pastes as a type layer on the canvas.
+                if id != "file.newFromClipboard"
+                    && let Some(result) = self.paste_clipboard_text()
+                {
+                    return result;
+                }
+                // Enabled on the strength of the OS clipboard, which held no image or text: a quiet no-op.
+                let message = "Nothing to paste: the clipboard holds no image or text";
                 self.ui.status = tl!(message).into();
                 self.ui.status_error = false;
                 return Ok(serde_json::json!({"pasted": false}));

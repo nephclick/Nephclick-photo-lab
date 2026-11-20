@@ -267,7 +267,11 @@ fn open_session(
             hosted.workspace_mut().show_item(current, settings, original.clone(), demosaic);
         }
     } else {
-        let mut open = RawDevelopOpen::new(subject, PixelSize::new(w as u32, h as u32), raw_target, settings).original(original.clone()).navigation(navigation);
+        let looks = super::looks::looks(app);
+        let mut open = RawDevelopOpen::new(subject, PixelSize::new(w as u32, h as u32), raw_target, settings)
+            .original(original.clone())
+            .navigation(navigation)
+            .looks(looks);
         if let Some(checker) = checkerboard {
             open = open.checkerboard(checker);
         }

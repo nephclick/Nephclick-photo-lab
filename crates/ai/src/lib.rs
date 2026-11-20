@@ -24,7 +24,11 @@ mod json;
 pub mod key;
 pub mod palette;
 #[cfg(not(target_arch = "wasm32"))]
+pub mod model_install;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod selection_manager;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod subject_model;
 
 use std::fmt;
 

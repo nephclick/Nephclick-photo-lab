@@ -210,6 +210,11 @@ fn invoke_shell_commands(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, id
     if let Some(r) = crate::prefs_ui::invoke(app, ctx, id, params) {
         return Some(r);
     }
+    // Select › AI Selection Models…: the menu opens the window; with params the command answers the status.
+    if id == "select.aiModels" && params.as_object().is_none_or(|o| o.is_empty()) {
+        crate::ai_models_ui::open(app);
+        return Some(Ok(json!({"window": "aiSelectionModels"})));
+    }
     // Save for Web's dialog would export the committed document, not the open Free Transform (#6737).
     if id == crate::transform_tool::SAVE_FOR_WEB
         && let Some(r) = crate::transform_tool::intercept(app, id)

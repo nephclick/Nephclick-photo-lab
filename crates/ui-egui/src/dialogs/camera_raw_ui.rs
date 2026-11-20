@@ -45,6 +45,7 @@ use crate::dialogs::shared_picture::SharedPicture;
 
 mod convert;
 mod filmstrip;
+mod looks;
 mod menu;
 mod open;
 pub(crate) mod proxy;
@@ -414,6 +415,11 @@ pub(crate) struct RawSession {
     pub(crate) gpu: Option<CameraRawGpu>,
 }
 
+/// Reads the LUTs the user loaded into RAW Develop into the develop's LUT library (once per run).
+pub(crate) fn preload_luts(app: &NephclickPhotoLabApp) {
+    looks::preload(app);
+}
+
 /// The hosted workspace, while it is open.
 pub(crate) fn hosted(app: &NephclickPhotoLabApp) -> Option<&Hosted> {
     app.framework.dialogs.get::<Hosted>()
@@ -557,6 +563,9 @@ pub(crate) fn take_with(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) -> 
             RawDevelopEvent::Show(index) => filmstrip::show_raw(app, ctx, index).map(|()| Value::Null),
             RawDevelopEvent::SaveSettings => sidecar::save_settings(app),
             RawDevelopEvent::LoadSettings => sidecar::load_settings(app),
+            RawDevelopEvent::SavePreset { name, settings } => looks::save_preset(app, &name, &settings),
+            RawDevelopEvent::DeletePreset(name) => looks::delete_preset(app, &name),
+            RawDevelopEvent::ImportLut => looks::import_lut(app),
             // The develop is keyed by the settings, so an edit needs no answer here.
             _ => continue,
         };

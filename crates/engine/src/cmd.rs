@@ -160,6 +160,7 @@ pub mod slice_cmds;
 pub mod smart_cmds;
 pub mod smart_svg_cmds;
 pub mod smartselect_cmds;
+pub mod ai_models_cmds;
 pub mod solid_fill_cmds;
 pub mod stamp_cmds;
 pub mod style_asl_cmds;
@@ -1378,6 +1379,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::vector_cmds::specs());
     v.extend(crate::path_edit_cmds::specs());
     v.extend(crate::smartselect_cmds::specs());
+    v.extend(crate::cmd::ai_models_cmds::specs());
     v.extend(crate::cmd::relight_cmds::specs());
     v.extend(crate::cutout_cmds::specs());
     v.extend(crate::symmetry_cmds::specs());

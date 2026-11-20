@@ -27,7 +27,49 @@ fn svg_clip_signature(clip: &nephclick_photolab_engine::edit_cmds::Clip) -> u64 
     sig
 }
 
+/// Most characters a text paste puts in one type layer: a longer clipboard is cut there.
+const MAX_PASTED_TEXT_CHARS: usize = 20_000;
+
+/// The type size, in points, of text pasted into a document `height` pixels tall at `dpi`: about a
+/// fourteenth of the height, kept between 6 and 400 pt.
+fn pasted_text_size(height: f64, dpi: f64) -> f64 {
+    let dpi = if dpi.is_finite() && dpi > 0.0 { dpi } else { 72.0 };
+    let size = (height / 14.0) * 72.0 / dpi;
+    if size.is_finite() { size.clamp(6.0, 400.0) } else { 12.0 }
+}
+
 impl NephclickPhotoLabApp {
+    /// Pastes the text on the OS clipboard as a new type layer centred on the canvas, for a paste
+    /// that found no image. `None` when the clipboard holds no text (or only whitespace), so the
+    /// paste says there is nothing to paste.
+    pub(super) fn paste_clipboard_text(&mut self) -> Option<Result<serde_json::Value, String>> {
+        let get = self.services.clipboard_get_text.as_mut()?;
+        let text = match get() {
+            Ok(Some(text)) => text,
+            Ok(None) => return None,
+            Err(error) => return Some(Err(error)),
+        };
+        let text = text.replace("\r\n", "\n").replace('\r', "\n");
+        let text: String = text.trim_end().chars().take(MAX_PASTED_TEXT_CHARS).collect();
+        if text.trim().is_empty() {
+            return None;
+        }
+        let Some(doc) = self.session.active() else {
+            return Some(Err(tl!("Open or create a document to paste text").into()));
+        };
+        let bounds = doc.doc.bounds();
+        let (w, h) = (f64::from(bounds.width()), f64::from(bounds.height()));
+        let size = pasted_text_size(h, f64::from(doc.doc.resolution_dpi));
+        let params = serde_json::json!({
+            "text": text,
+            "x": f64::from(bounds.x0) + w / 2.0,
+            "y": f64::from(bounds.y0) + h / 2.0,
+            "align": "center",
+            "size": size,
+        });
+        Some(self.run("type.create", params))
+    }
+
     /// Capture SVG and its raster mirror together; failures leave the previous copy intact.
     pub(super) fn import_os_svg_clipboard(&mut self) -> Result<bool, String> {
         let Some(get) = self.services.clipboard_get_svg.as_mut() else { return Ok(false) };
