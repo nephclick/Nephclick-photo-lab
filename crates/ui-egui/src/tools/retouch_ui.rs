@@ -604,6 +604,17 @@ pub fn finish_object_selection(app: &mut NephclickPhotoLabApp, start: [f64; 2], 
         mods,
         crate::tool_feedback::has_selection(app),
     ));
+    // AI Click: the offline Prompt & Click models select the object under a click or inside a rectangle.
+    if app.ui.tool_options.object_ai {
+        let r = if w < 2.0 || h < 2.0 {
+            app.run("select.ai", json!({"type": "point", "point": [end[0], end[1]], "mode": mode}))
+        } else {
+            app.run("select.ai", json!({"type": "box", "rect": [x.round(), y.round(), w.round(), h.round()], "mode": mode}))
+        };
+        crate::object_finder::clear(app);
+        report_smart_result(app, r, tl!("No object found there — try a rectangle around it"));
+        return;
+    }
     if (w < 2.0 || h < 2.0) && app.ui.tool_options.object_finder {
         // Object Finder (#4087): the object under the click, as hovering highlighted it.
         let r = app.run("select.object", json!({"point": [end[0], end[1]], "mode": mode, "sampleAllLayers": sample_all, "hardEdge": hard_edge}));

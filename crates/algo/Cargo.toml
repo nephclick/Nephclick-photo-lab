@@ -10,6 +10,8 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+# RAW Develop's built-in LUT looks (`raw_luts`).
+craft-cms = { workspace = true }
 craft-metadata = { workspace = true }
 nephclick-photolab-geom = { workspace = true }
 nephclick-photolab-color = { workspace = true }

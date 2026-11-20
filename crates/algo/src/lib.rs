@@ -25,6 +25,7 @@ pub mod average;
 mod blur;
 mod blur2;
 pub mod camera_raw;
+pub mod raw_luts;
 pub mod channel_noise;
 pub mod color_to_alpha;
 pub mod content_aware;

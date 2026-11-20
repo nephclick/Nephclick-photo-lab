@@ -241,6 +241,13 @@ impl NephclickPhotoLabApp {
         app.framework.move_memories(&mut app.session);
         // After the saved preferences, which say whether the set was already offered.
         kys_import::offer(&mut app);
+        // The offline AI selection models live in the settings folder.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(dir) = app.services.ai_dir.clone() {
+            nephclick_photolab_ai::model_install::set_models_root(dir.join("ai_selection"));
+        }
+        // The LUTs the user loaded into RAW Develop, so a document that names one develops with it.
+        crate::dialogs::camera_raw_ui::preload_luts(&app);
         // File › Scripts › Script Events Manager: "Start Application".
         nephclick_photolab_engine::automate_cmds::fire_event(&mut app.session, "startApplication");
         Box::new(app)

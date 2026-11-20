@@ -12,19 +12,19 @@ rust-version = "1.95"
 [workspace.dependencies]
 # The craft framework through its facade (`craft::ui::…`). The egui `[patch]` below must match
 # `craft::egui_fork::REV` (checked by `cargo xtask ci`).
-craft = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c", default-features = false }
+craft = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324", default-features = false }
 # internal
 nephclick-photolab-geom = { path = "crates/geom" }
 nephclick-photolab-color = { path = "crates/color" }
 nephclick-photolab-raster = { path = "crates/raster" }
 nephclick-photolab-doc = { path = "crates/doc" }
 nephclick-photolab-ops = { path = "crates/ops" }
-craft-plist = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-psd = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-nephclick-photolab-codecs = { package = "craft-image-codecs", git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-nephclick-photolab-formats = { package = "craft-file-formats", git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c", features = ["raster-codecs", "pdf", "svg", "ora", "kra", "xcf", "pdn", "raw", "psd", "affinity", "pcraft"] }
+craft-plist = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-psd = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+nephclick-photolab-codecs = { package = "craft-image-codecs", git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+nephclick-photolab-formats = { package = "craft-file-formats", git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324", features = ["raster-codecs", "pdf", "svg", "ora", "kra", "xcf", "pdn", "raw", "psd", "affinity", "pcraft"] }
 nephclick-photolab-raw = { path = "crates/raw" }
-craft-affinity = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+craft-affinity = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 nephclick-photolab-compose = { path = "crates/compose" }
 nephclick-photolab-gpu = { path = "crates/gpu" }
 nephclick-photolab-paint = { path = "crates/paint" }
@@ -44,36 +44,36 @@ nephclick-photolab-ai = { path = "crates/ai" }
 
 # external
 # ICC colour management: the shared crate (replaces crates/cms; craft-libs#779).
-craft-cms = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-print = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+craft-cms = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-print = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 # The suite's AI provider abstraction (OpenAI-compatible text completions); `crates/ai` builds on it.
-craft-ai = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+craft-ai = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 tempfile = "3"
 # HEIC/HEIF: the shared decoder (replaces crates/heif; craft-libs#784).
-craft-heif = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-pdf = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c", features = ["raster", "write-raster"] }
-craft-xml = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-docpath = { version = "0.1.0", git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-jpeg = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-pcraft-format = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-pcraft-bundle = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-zip = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-ora = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-kra = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-xcf = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-pdn = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-svg = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c", features = ["tree-render", "tree-render-system-fonts"] }
-craft-raw = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-tiff = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+craft-heif = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-pdf = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324", features = ["raster", "write-raster"] }
+craft-xml = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-docpath = { version = "0.1.0", git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-jpeg = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-pcraft-format = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-pcraft-bundle = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-zip = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-ora = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-kra = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-xcf = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-pdn = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-svg = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324", features = ["tree-render", "tree-render-system-fonts"] }
+craft-raw = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-tiff = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 # Camera-field EXIF reader/writer, shared prerequisite craft-libs#1563.
-craft-metadata = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-craft-crs = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+craft-metadata = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+craft-crs = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 # Interface translations: lookup, fallback, CLDR plurals and language names over the craft-i18n
 # catalogs that `crates/ui-egui/build.rs` embeds from `CRAFT_I18N_DIR` (storytold/craft-i18n, at
 # the commit in `craft-i18n.rev`). Already in the tree through craft.
-craft-i18n = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+craft-i18n = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 # craft-update: app-specific pretend versions apply to startup and manual checks.
-craft-update = { git = "https://github.com/nephclick/craft-libs", version = "=0.1.0", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c", features = ["ui"] }
+craft-update = { git = "https://github.com/nephclick/craft-libs", version = "=0.1.0", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324", features = ["ui"] }
 thiserror = "2"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
@@ -325,14 +325,14 @@ opt-level = 3
 # Keep the complete egui family and native event bridge on reviewed fork commits.
 
 [patch.crates-io]
-krilla = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-hayro = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-hayro-interpret = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-hayro-syntax = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-hayro-jbig2 = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-hayro-cmap = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-hayro-postscript = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
-linesweeper = { git = "https://github.com/nephclick/craft-libs", rev = "d5a65ac8daa52931460ea9c76f7e24b38773893c" }
+krilla = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+hayro = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+hayro-interpret = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+hayro-syntax = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+hayro-jbig2 = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+hayro-cmap = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+hayro-postscript = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
+linesweeper = { git = "https://github.com/nephclick/craft-libs", rev = "ecd5adb8a2fb95813a6498d52eaff35877b2e324" }
 ecolor = { git = "https://github.com/storytold/egui.git", rev = "e9711ca9b69772f875ae0d1cef1977ff8c16234d" }
 emath = { git = "https://github.com/storytold/egui.git", rev = "e9711ca9b69772f875ae0d1cef1977ff8c16234d" }
 epaint = { git = "https://github.com/storytold/egui.git", rev = "e9711ca9b69772f875ae0d1cef1977ff8c16234d" }

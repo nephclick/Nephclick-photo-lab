@@ -271,6 +271,20 @@ impl NephclickPhotoLabApp {
             }
         };
         let doc = st.doc.id;
+        // Save As asks for the format first (Nephclick PhotoLab, Photoshop, Editable PDF, TIFF, PNG…), so the system
+        // dialog starts on it; automation and tests go straight to the dialog.
+        if !cfg!(test) && !self.automation_input {
+            if crate::save_format_ui::is_open() {
+                return Err("Choose a format in the Save As window first".into());
+            }
+            crate::save_format_ui::ask(self, doc, suggested, choices, plain_save);
+            return Ok(serde_json::json!({"dialog": "saveFormat"}));
+        }
+        self.pick_document_path(doc, suggested, choices, plain_save)
+    }
+
+    /// Asks where to save document `doc` (the system dialog, starting on `suggested`) and saves it there.
+    pub(crate) fn pick_document_path(&mut self, doc: nephclick_photolab_doc::DocId, suggested: String, choices: FormatChoices, plain_save: bool) -> Result<Value, String> {
         self.pick_save(&suggested, move |app, path| {
             app.with_document(doc, |app| {
                 let own = app.session.active().and_then(|st| st.path.clone());
@@ -545,6 +559,8 @@ impl NephclickPhotoLabApp {
             image_previews: previews,
             psd_maximize_compatibility: maximize,
             pcraft_full_composite: file_handling.pcraft_full_composite,
+            // A PDF saved (not exported) keeps the whole document inside it, editable.
+            pdf_editable: true,
             ..ExportSettings::default()
         };
         if let Some(st) = self.session.active() {

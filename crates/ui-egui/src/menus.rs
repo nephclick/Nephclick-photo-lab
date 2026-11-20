@@ -13,6 +13,7 @@ mod bar;
 pub mod enable_rules;
 mod invoke;
 mod items;
+pub(crate) use items::menu_tint;
 pub mod native_menu;
 pub mod parity;
 pub mod plugin_ui;

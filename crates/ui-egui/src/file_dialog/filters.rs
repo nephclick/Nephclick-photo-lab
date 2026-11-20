@@ -9,7 +9,7 @@ use craft::host::PickRequest;
 /// Photoshop brushes (.abr), gradients (.grd), layer styles (.asl), swatches (.aco, .act, .ase) and keyboard shortcut sets
 /// (.kys), which go to the preset libraries and Edit › Keyboard Shortcuts.
 pub(super) const OPEN_EXTS: &[&str] = &[
-    "npl", "tnpl", "pcraft", "pdn", "ora", "xcf", "xcfgz", "gz", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "dib", "tga",
+    "nplab", "npl", "tnpl", "pcraft", "pdn", "ora", "xcf", "xcfgz", "gz", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "dib", "tga",
     "ico", "qoi", "exr", "hdr", "pbm", "pgm", "ppm", "pnm", "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "dcm", "dicom", "dc3",
     "iff", "lbm", "ilbm", "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2", "raf", "abr", "grd", "asl", "svg", "svgz",
     "aco", "act", "ase", "kys", "af", "afdesign", "afphoto", "afpub", "pdf", "ai",
@@ -23,7 +23,7 @@ const SVG_EXTS: &[&str] = &["svg", "svgz"];
 /// picker defaults to another filter.
 pub(super) const OPEN_FILTERS: &[(&str, &[&str])] = &[
     ("Photoshop", &["psd", "psb", "psdt"]),
-    ("Nephclick PhotoLab Project", &["npl", "pcraft"]),
+    ("Nephclick PhotoLab Project", &["nplab", "npl", "pcraft"]),
     ("Nephclick PhotoLab Template", &["tnpl"]),
     ("Affinity", &["af", "afdesign", "afphoto", "afpub"]),
     ("Amiga IFF", &["iff", "lbm", "ilbm"]),
@@ -69,7 +69,7 @@ pub(super) const OPEN_FILTERS: &[(&str, &[&str])] = &[
 pub(super) const SAVE_FILTERS: &[(&str, &[&str])] = &[
     ("PSD Document", &["psd", "psb"]),
     ("PSB Large Document", &["psb"]),
-    ("Nephclick PhotoLab Project", &["npl", "pcraft"]),
+    ("Nephclick PhotoLab Project", &["nplab", "npl", "pcraft"]),
     ("Nephclick PhotoLab Template", &["tnpl"]),
     ("Amiga IFF", &["iff"]),
     ("BMP", &["bmp", "dib"]),
@@ -89,7 +89,7 @@ pub(super) const SAVE_FILTERS: &[(&str, &[&str])] = &[
     ("Netpbm", &["pnm"]),
     ("OpenEXR", &["exr"]),
     ("OpenRaster", &["ora"]),
-    ("PDF", &["pdf"]),
+    ("Editable PDF", &["pdf"]),
     ("PNG", &["png"]),
     ("Radiance HDR", &["hdr"]),
     ("Targa", &["tga"]),

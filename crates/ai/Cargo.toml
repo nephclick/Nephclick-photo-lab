@@ -1,6 +1,6 @@
 [package]
 name = "nephclick-photolab-ai"
-description = "The AI service Nephclick PhotoLab calls: OpenAI-compatible text and image requests (OpenRouter by default), the stored API key, and the prompts and parsers for palettes, ideas and AI Fill"
+description = "The AI service Nephclick PhotoLab calls: OpenAI-compatible text and image requests (OpenRouter by default), the stored API key, the prompts and parsers for palettes, ideas and AI Fill, and offline AI selection"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,6 +15,10 @@ base64 = "0.23"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 craft-ai = { workspace = true }
 ureq = { version = "3", features = ["json"] }
+# Offline Select Subject: the ISNet model run in-process by a pure-Rust ONNX runtime (MIT OR Apache-2.0).
+tract-onnx = "0.23"
+# Checks the downloaded model (MIT OR Apache-2.0).
+sha2 = "0.10"
 
 [dev-dependencies]
 tempfile = { workspace = true }

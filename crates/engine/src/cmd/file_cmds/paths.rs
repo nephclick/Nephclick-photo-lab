@@ -105,7 +105,7 @@ pub(crate) fn openable_name(path: &str) -> bool {
 /// process silently.
 #[cfg(not(target_arch = "wasm32"))]
 const OPENABLE: &[&str] = &[
-    "npl", "tnpl", "pcraft", "pdn", "ora", "xcf", "xcfgz", "kra", "krz", "psd", "psb", "psdt", "svg", "svgz", "pdf", "ai", "af", "afdesign", "afphoto", "afpub", "dng", "cr2", "nef",
+    "nplab", "npl", "tnpl", "pcraft", "pdn", "ora", "xcf", "xcfgz", "kra", "krz", "psd", "psb", "psdt", "svg", "svgz", "pdf", "ai", "af", "afdesign", "afphoto", "afpub", "dng", "cr2", "nef",
     "nrw", "arw", "pef",
 ];
 
@@ -129,7 +129,7 @@ pub fn saves_in_place(path: &str) -> bool {
 /// .pcraft). A save to one becomes the document's file; any other format is a copy for automation
 /// saves, desktop and headless alike (#1547, #2579).
 pub fn layered_extension(ext: &str) -> bool {
-    matches!(ext, "psd" | "psb" | "pcraft" | "npl" | "tnpl" | "ora")
+    matches!(ext, "psd" | "psb" | "pcraft" | "npl" | "nplab" | "tnpl" | "ora")
 }
 
 /// Whether a file in format `ext` (lower-case) holds the whole of `doc`, so it can be the
@@ -139,7 +139,7 @@ pub fn layered_extension(ext: &str) -> bool {
 /// original is never overwritten with less than it had (#3806).
 pub fn holds(doc: &nephclick_photolab_doc::Document, ext: &str) -> bool {
     match ext {
-        "psd" | "psb" | "pcraft" | "npl" | "tnpl" => true,
+        "psd" | "psb" | "pcraft" | "npl" | "nplab" | "tnpl" => true,
         "ora" => nephclick_photolab_io::ora_losses(doc).is_empty(),
         _ => false,
     }

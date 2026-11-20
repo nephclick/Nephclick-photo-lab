@@ -141,6 +141,9 @@ pub const ALTERNATE_SHORTCUTS: &[(&str, &str)] = &[
     ("select.inverse", "Shift+F7"),
     ("view.zoomIn", "Cmd++"),
     ("view.actualPixels", "Cmd+Alt+0"),
+    // On a Mac, Control+0 as well as ⌘0 brings the image back to Fit on Screen (Ctrl+0 is ⌘0 elsewhere).
+    #[cfg(target_os = "macos")]
+    ("view.fitOnScreen", "Ctrl+0"),
     ("window.panel.actions", "F9"),
     // Cmd+Alt held together with Space: Zoom Out, as the Alt that turns a held Cmd+Space Zoom In around.
     ("tools.temporary.zoomOut", "Cmd+Alt+Space"),

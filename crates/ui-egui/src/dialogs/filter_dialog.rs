@@ -186,6 +186,12 @@ pub const PREVIEWED: &[&str] = &[
     "edit.convertToProfile",
     // Previewed from the session's history (`canvas::filter_preview`), at full size (#8230).
     "edit.fade",
+    // Image › Apply Image previews on the target layer; Image › Calculations shows its result channel in grey on the
+    // canvas while the dialog is set up, as Photoshop does.
+    "image.applyImage",
+    "image.calculations",
+    // Layer › New › Light Pose Layer: the relit picture shows on the canvas while the light is set up.
+    "layer.new.lightPoseLayer",
 ];
 
 /// Whether the dialog of `command` offers the Preview box and a live preview.
@@ -1123,6 +1129,13 @@ pub(crate) fn preview_document_for_target(
         s.select_layer(id).ok()?;
     }
     s.active_mut()?.channel_view.target = target;
+    // Calculations makes a channel, a document or a selection, none of which changes the composite: its preview runs
+    // it as a new document, which the canvas then shows (the result in grey, at the image's size).
+    if command == "image.calculations"
+        && let Some(o) = p.as_object_mut()
+    {
+        o.insert("result".into(), Value::from("newDocument"));
+    }
     s.execute(command, p).ok()?;
     s.active().map(|d| crate::proxy::proxy_document(&d.doc, reduce_k))
 }

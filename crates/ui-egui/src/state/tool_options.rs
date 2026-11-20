@@ -20,6 +20,9 @@ pub struct ToolOptions {
     pub object_finder: bool,
     /// Object Selection › Hard Edge (#12855): off, the result gets a softer, slightly wider rim.
     pub object_hard_edge: bool,
+    /// Object Selection › AI Click: a click or a rectangle asks the offline Prompt & Click models (SAM 2.1) instead of
+    /// the built-in method.
+    pub object_ai: bool,
     /// Remove tool: the fill goes to a new layer above the target (Photoshop's Create a new layer).
     pub remove_new_layer: bool,
     /// Remove tool: each stroke is filled when released (Photoshop's default). Off, the strokes
@@ -413,6 +416,7 @@ impl Default for ToolOptions {
             sample_all: SampleAllLayers::default(),
             object_finder: true,
             object_hard_edge: true,
+            object_ai: false,
             remove_new_layer: false,
             remove_after_each_stroke: true,
             feather: 0.0,

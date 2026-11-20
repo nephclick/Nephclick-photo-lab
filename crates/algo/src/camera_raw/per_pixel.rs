@@ -235,7 +235,8 @@ pub fn white_black_points(px: &[[f32; 4]], w: usize, h: usize, p: &CameraRaw, in
 /// without a spatial stage and without `points`. The points themselves leave Calibration out, so a
 /// caller may cache them across Calibration changes.
 pub fn per_pixel(p: &CameraRaw, inputs: &DevelopInputs, w: usize, h: usize, float: bool, points: Option<(f32, f32)>) -> Option<PerPixel> {
-    if detail_on(p) || !calibration_neutral(p) {
+    // The GPU pass has no LUT stage: a LUT develops on the CPU.
+    if detail_on(p) || !calibration_neutral(p) || super::lut_on(p) || !p.red_eyes.is_empty() {
         return None;
     }
     // The develop leaves frames under 2 pixels on a side alone.

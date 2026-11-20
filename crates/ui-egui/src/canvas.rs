@@ -24,6 +24,7 @@ use serde_json::json;
 use crate::state::Tool;
 
 pub mod artboard_ui;
+pub mod split_view;
 pub(crate) mod background_redraw;
 pub(crate) mod cam_preview;
 pub mod canvas_tool_menu;
