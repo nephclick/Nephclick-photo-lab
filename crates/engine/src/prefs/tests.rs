@@ -103,10 +103,10 @@ fn appearance_defaults_and_legacy_theme_migrate() {
     let p = Preferences::default();
     // New users keep Photoshop's default; following the system is opt-in.
     assert_eq!(p.interface.appearance_mode, AppearanceMode::Dark);
-    assert_eq!(p.interface.dark_theme, "craft.artcraft");
+    assert_eq!(p.interface.dark_theme, "craft.midnight", "Midnight is the default dark theme");
     assert_eq!(p.interface.light_theme, "craft.pro");
     for (theme, mode, dark, light) in
-        [("pro", AppearanceMode::Dark, "craft.pro", "craft.pro"), ("classic", AppearanceMode::Light, "craft.artcraft", "craft.classic")]
+        [("pro", AppearanceMode::Dark, "craft.pro", "craft.pro"), ("classic", AppearanceMode::Light, "craft.midnight", "craft.classic")]
     {
         let mut s = Session::new();
         s.load_prefs_json(&json!({"interface": {"theme": theme}}).to_string()).unwrap();
@@ -192,9 +192,10 @@ fn pre_id_theme_names_read_as_ids_where_they_were_saved() {
     });
     s.load_prefs_json(&saved.to_string()).unwrap();
     let p = s.prefs();
-    assert_eq!((p.interface.dark_theme.as_str(), p.interface.light_theme.as_str()), ("craft.artcraft", "craft.adwaita"));
+    // Saved before Midnight was the default, the old default dark theme moves to Midnight once.
+    assert_eq!((p.interface.dark_theme.as_str(), p.interface.light_theme.as_str()), ("craft.midnight", "craft.adwaita"));
     assert_eq!(p.interface.favorite_themes, ["craft.breeze"]);
-    assert_eq!(s.execute("prefs.get", json!({"path": "interface.theme"})).unwrap(), json!("craft.artcraft"));
+    assert_eq!(s.execute("prefs.get", json!({"path": "interface.theme"})).unwrap(), json!("craft.midnight"));
     s.execute("prefs.set", json!({"path": "interface.appearanceMode", "value": "light"})).unwrap();
     assert_eq!(s.execute("prefs.get", json!({"path": "interface.theme"})).unwrap(), json!("craft.adwaita"));
 }
@@ -1299,4 +1300,19 @@ fn a_saved_control_port_turns_the_agent_connection_on() {
     assert!(!load(r#"{"integrations":{"controlPort":70000}}"#).connect_agents, "not a usable port");
     assert!(!load(r#"{"integrations":{"controlPort":7878,"connectAgents":false}}"#).connect_agents, "an explicit choice wins");
     assert!(!load("{}").connect_agents, "off by default");
+}
+
+/// Settings saved before Midnight was the default move from the old default (Pro Medium Gray) to Midnight once; a
+/// theme chosen afterwards, the old default included, stays.
+#[test]
+fn the_old_default_dark_theme_moves_to_midnight_once() {
+    let mut s = Session::new();
+    s.load_prefs_json(&json!({"interface": {"darkTheme": "craft.artcraft"}}).to_string()).unwrap();
+    assert_eq!(s.prefs().interface.dark_theme, "craft.midnight");
+    let mut chosen = Session::new();
+    chosen.load_prefs_json(&json!({"interface": {"darkTheme": "craft.artcraft", "midnightAdopted": true}}).to_string()).unwrap();
+    assert_eq!(chosen.prefs().interface.dark_theme, "craft.artcraft", "chosen after the move: kept");
+    let mut other = Session::new();
+    other.load_prefs_json(&json!({"interface": {"darkTheme": "craft.breeze"}}).to_string()).unwrap();
+    assert_eq!(other.prefs().interface.dark_theme, "craft.breeze", "another theme: kept");
 }

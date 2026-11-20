@@ -468,6 +468,11 @@ pub(crate) fn invoke_unguarded(app: &mut NephclickPhotoLabApp, ctx: &egui::Conte
         }
         // Solid Color fills and solid-colour shapes use the Color Picker, Pattern fills the Pattern
         // Fill dialog; other adjustment / fill / shape controls use Properties.
+        // Batch Rename Layers… from a menu asks for the names first; explicit params rename at once.
+        "layer.batchRename" if params.as_object().is_none_or(|o| o.is_empty()) => {
+            crate::batch_rename_ui::open(app);
+            Ok(json!({"dialog": "batchRename"}))
+        }
         "layer.layerContentOptions" => {
             // A Gradient Map layer pops up its Gradient Editor, as a Solid Color layer pops up the Color Picker.
             if params.as_object().is_none_or(|o| o.is_empty()) && crate::gradient_map_ui::open(app) {
@@ -478,6 +483,10 @@ pub(crate) fn invoke_unguarded(app: &mut NephclickPhotoLabApp, ctx: &egui::Conte
             }
             if let Some(dialog) = crate::pattern_fill_ui::open(app) {
                 return Ok(dialog_reply(dialog));
+            }
+            // Adjustment and fill layers pop up their controls in a window, as Photoshop's adjustment dialogs do.
+            if params.as_object().is_none_or(|o| o.is_empty()) && crate::layer_popup_ui::open(app) {
+                return Ok(json!({"dialog": "layerProperties"}));
             }
             let r = app.run(id, params)?;
             crate::panel_docking::show_panel(app, "properties", Some(true))?;

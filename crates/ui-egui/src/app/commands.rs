@@ -288,6 +288,9 @@ impl NephclickPhotoLabApp {
             // A new Gradient Map layer opens its Gradient Editor at once, so its gradient can be chosen and edited.
             if id == "layer.newAdjustmentLayer.gradientMap" && !self.automation_input && !cfg!(test) {
                 crate::gradient_map_ui::open(self);
+            } else if !self.automation_input && !cfg!(test) {
+                // Other new adjustment and fill layers open their controls in a window at once.
+                crate::layer_popup_ui::open(self);
             }
         }
         // Making a new selection reveals its outline after View > Extras was hidden (#5597).

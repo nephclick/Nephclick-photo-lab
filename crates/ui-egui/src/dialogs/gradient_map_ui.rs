@@ -140,7 +140,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(true)
         .resizable(true)
-        .default_width(460.0)
+        .default_width(crate::theme::DIALOG_WIDTH_LG)
         .default_pos(ctx.content_rect().center() - egui::vec2(230.0, 260.0))
         .show(ctx, |ui| editor_ui(ui, &mut editor, &presets, &mut asked));
     if !open {
@@ -208,7 +208,7 @@ fn editor_ui(ui: &mut egui::Ui, editor: &mut Editor, presets: &[craft::draw::ui:
     // Name and New.
     ui.horizontal(|ui| {
         let label = ui.label(tl!("Name:"));
-        ui.add(egui::TextEdit::singleline(&mut editor.name).desired_width(200.0).char_limit(64)).labelled_by(label.id);
+        ui.add(egui::TextEdit::singleline(&mut editor.name).desired_width(crate::theme::FIELD_WIDTH).char_limit(64)).labelled_by(label.id);
         if ui.button(tl!("New")).on_hover_text(tl!("Save this gradient as a preset")).clicked() {
             asked.save_preset = true;
         }
@@ -231,16 +231,9 @@ fn editor_ui(ui: &mut egui::Ui, editor: &mut Editor, presets: &[craft::draw::ui:
     }
 
     ui.separator();
-    ui.horizontal(|ui| {
-        if ui.button(tl!("Cancel")).clicked() || crate::window_keys::take_escape(ui.ctx()) {
-            asked.cancel = true;
-        }
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button(tl!("OK")).clicked() {
-                asked.ok = true;
-            }
-        });
-    });
+    let buttons = crate::theme::dialog_buttons(ui, tl!("OK"), true);
+    asked.ok |= buttons.confirm;
+    asked.cancel |= buttons.cancel;
 }
 
 /// The selected colour stop's fields, Add, Delete and Randomize.

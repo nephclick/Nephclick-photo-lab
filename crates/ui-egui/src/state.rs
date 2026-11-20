@@ -180,6 +180,10 @@ pub struct UiState {
     /// Preferences ▸ Type ▸ Recent Fonts; de-duplicated.
     #[serde(default)]
     pub recent_fonts: Vec<String>,
+    /// Adjustment and fill layers open their controls in a floating window (double-click, or a new layer), as
+    /// Photoshop's adjustment dialogs do; off, they stay in the Properties panel.
+    #[serde(default = "yes")]
+    pub adjustments_in_window: bool,
     /// Inline type editing session, if any.
     #[serde(default)]
     pub text_edit: Option<TextEdit>,
@@ -453,6 +457,13 @@ fn brushes_list() -> PresetState<BrushKey> {
     state
 }
 
+/// The font lists open on the Recent category: the fonts used last, most recent first (all fonts until one is used).
+fn recent_fonts_first() -> craft::font_manager::picker::FontFilters {
+    let mut filters = craft::font_manager::picker::FontFilters::default();
+    filters.recent = true;
+    filters
+}
+
 impl Default for UiState {
     /// Creates the default UI state with default tools and empty drag state.
     fn default() -> Self {
@@ -462,6 +473,7 @@ impl Default for UiState {
             spring: None,
             recent_files: Vec::new(),
             recent_fonts: Vec::new(),
+            adjustments_in_window: true,
             text_edit: None,
             type_box_overflow: false,
             type_insertion_style: None,
@@ -492,7 +504,7 @@ impl Default for UiState {
             layer_comp_selected: None,
             presets_ui: Default::default(),
             type_panels: Default::default(),
-            font_filters: Default::default(),
+            font_filters: recent_fonts_first(),
             analysis: Default::default(),
             timeline: Default::default(),
             slices: Default::default(),

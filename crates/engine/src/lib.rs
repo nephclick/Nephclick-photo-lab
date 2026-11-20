@@ -113,6 +113,7 @@ pub use cmd::image_cmds;
 pub use cmd::layer_copy_cmds;
 pub use cmd::layer_css_cmds;
 pub use cmd::layer_label_cmds;
+pub use cmd::layer_batch_cmds;
 pub use cmd::layer_list_cmds;
 pub use cmd::layer_mask_props_cmds;
 pub use cmd::layer_menu_cmds;

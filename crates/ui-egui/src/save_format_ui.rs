@@ -69,7 +69,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .collapsible(false)
         .resizable(false)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .default_width(440.0)
+        .default_width(crate::theme::DIALOG_WIDTH_MD)
         .show(ctx, |ui| {
             ui.label(tl!("Choose the format to save in:"));
             ui.add_space(6.0);
@@ -87,18 +87,13 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
             }
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                if ui.button(tl!("Other Formats…")).clicked() {
+                if ui.add(egui::Button::new(tl!("Other Formats…")).min_size(egui::vec2(0.0, crate::theme::CONTROL_HEIGHT))).clicked() {
                     prompt.picked = String::new();
                     go = true;
                 }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button(tl!("Continue…")).clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                        go = true;
-                    }
-                    if ui.button(tl!("Cancel")).clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-                        cancel = true;
-                    }
-                });
+                let buttons = crate::theme::dialog_buttons(ui, tl!("Continue…"), true);
+                go |= buttons.confirm || ui.input(|i| i.key_pressed(egui::Key::Enter));
+                cancel |= buttons.cancel;
             });
         });
     if !open || cancel {
