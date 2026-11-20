@@ -10,7 +10,9 @@
     "space.pad.roomy": 20,
     "space.gap.stack": 8,
     "space.gap.section": 16,
-    "space.gap.item": 8
+    "space.gap.item": 8,
+    "size.plot.width": 296,
+    "size.plot.height": 178
   },
   "compact": {
     "typography.label.size": 12,

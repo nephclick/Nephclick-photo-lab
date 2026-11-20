@@ -201,8 +201,9 @@ pub(crate) fn previews(command: &str) -> bool {
 
 /// Whether `command` opens a schema dialog.
 pub fn has_dialog(command: &str) -> bool {
-    // The Filter Gallery has its own full-window dialog (gallery_ui).
-    if command == "filter.filterGallery" {
+    // The Filter Gallery has its own full-window dialog (gallery_ui); Apply Image and Calculations have their channel
+    // forms and Light Pose its own window: they preview (`previews`) without being parameter dialogs.
+    if matches!(command, "filter.filterGallery" | "image.applyImage" | "image.calculations" | "layer.new.lightPoseLayer") {
         return false;
     }
     (command.starts_with("filter.")
