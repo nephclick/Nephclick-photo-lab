@@ -238,7 +238,7 @@ pub fn thumbnail_image(f: &Fill, side: u32) -> Option<egui::ColorImage> {
 
 /// The selected layer when it is a gradient fill layer. Unlike [`active_gradient`] it does not
 /// require the layer to be visible: the editor edits it either way.
-fn selected_gradient(app: &NephclickPhotoLabApp) -> Option<Layer> {
+pub(crate) fn selected_gradient(app: &NephclickPhotoLabApp) -> Option<Layer> {
     let st = app.session.active()?;
     let l = st.doc.layer(st.active_layer?)?;
     fill_of(l)?;

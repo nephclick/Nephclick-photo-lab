@@ -14,7 +14,7 @@ use nephclick_photolab_doc::BlendMode;
 
 use super::{fill_layer_active, options_changed, stops};
 use crate::state::Tool;
-use crate::{NephclickPhotoLabApp, panel_docking};
+use crate::NephclickPhotoLabApp;
 
 /// The blend modes the Classic gradient lists, with a rule above each group.
 fn blend_modes() -> Vec<Entry<BlendMode>> {
@@ -77,7 +77,8 @@ pub(crate) fn bar(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui) {
         }
     }
     if open_editor {
-        let _ = panel_docking::show_panel(app, "gradientEditor", None);
+        // Photoshop opens the Gradient Editor over the canvas from the options bar's gradient.
+        crate::gradient_editor_window::open(app);
     }
     options_changed(app, &before);
 }

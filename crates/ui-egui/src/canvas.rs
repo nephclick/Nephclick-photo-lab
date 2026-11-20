@@ -794,3 +794,5 @@ mod pen_gesture_owner_tests;
 #[cfg(test)]
 #[path = "path_selection_cursor_tests.rs"]
 mod path_selection_cursor_tests;
+#[cfg(test)]
+mod brush_circle_tests;
