@@ -197,6 +197,9 @@ mod pen_resume_tests;
 mod pen_enter_deselects_tests;
 
 #[cfg(test)]
+mod pen_photoshop_tests;
+
+#[cfg(test)]
 mod ellipse_path_menus_tests;
 
 #[cfg(test)]

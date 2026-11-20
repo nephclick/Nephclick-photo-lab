@@ -61,7 +61,7 @@ fn move_to(h: &mut Harness<'static, Box<NephclickPhotoLabApp>>, from: [f32; 2], 
 
 /// A drag from `pts[0]` through the other points; `alt_from` is the index of the point from
 /// which ⌥/Alt is held (`Some(0)`: before the press).
-fn drag(h: &mut Harness<'static, Box<NephclickPhotoLabApp>>, pts: &[[f32; 2]], alt_from: Option<usize>) {
+pub(super) fn drag(h: &mut Harness<'static, Box<NephclickPhotoLabApp>>, pts: &[[f32; 2]], alt_from: Option<usize>) {
     let held = |i: usize| if alt_from.is_some_and(|a| i >= a) { Modifiers::ALT } else { Modifiers::NONE };
     let p = screen(h, pts[0]);
     mods(h, held(0));
@@ -77,6 +77,14 @@ fn drag(h: &mut Harness<'static, Box<NephclickPhotoLabApp>>, pts: &[[f32; 2]], a
     button(h, q, false, held(pts.len() - 1));
     mods(h, Modifiers::NONE);
     h.run_steps(1);
+}
+
+/// The pointer over document point `p` with `m` held, no button down.
+pub(super) fn hover(h: &mut Harness<'static, Box<NephclickPhotoLabApp>>, p: [f32; 2], m: Modifiers) {
+    mods(h, m);
+    let q = screen(h, p);
+    h.event(egui::Event::PointerMoved(q));
+    h.run_steps(2);
 }
 
 pub(super) fn click(h: &mut Harness<'static, Box<NephclickPhotoLabApp>>, p: [f32; 2]) {
