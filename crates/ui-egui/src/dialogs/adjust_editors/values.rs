@@ -372,7 +372,7 @@ fn read_hue_saturation(v: &Value) -> HueSaturation {
 }
 
 /// The stops the editor shows: Photoshop's own when the map keeps them (`source`, #8351), else the map's.
-fn read_gradient_map(v: &Value) -> GradientMap {
+pub(crate) fn read_gradient_map(v: &Value) -> GradientMap {
     let source = v.get("source").filter(|s| s.is_object());
     let held = source.unwrap_or(v);
     let mids: Vec<f32> = source
@@ -595,7 +595,7 @@ fn write_curves(out: &mut Map<String, Value>, entries: &[(ToneChannel, usize)], 
 
 /// Writes the stops: into Photoshop's gradient when `base` keeps one (its midpoints follow the stops, a new segment
 /// halfway; smoothness and method stay as `base` has them), else as the map's own stops.
-fn write_gradient_map(out: &mut Map<String, Value>, map: &GradientMap) {
+pub(crate) fn write_gradient_map(out: &mut Map<String, Value>, map: &GradientMap) {
     let mut stops: Vec<&ColorStop> = map.stops.color.iter().collect();
     stops.sort_by(|a, b| a.location.total_cmp(&b.location));
     let written: Vec<Value> = stops.iter().map(|s| json!([(s.location * 1000.0).round() / 1000.0, hex(s.color)])).collect();

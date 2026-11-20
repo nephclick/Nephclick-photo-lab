@@ -285,6 +285,10 @@ impl NephclickPhotoLabApp {
             // Properties comes to the front, shown and expanded, so the new layer's settings can
             // be edited at once, as in Photoshop (#4028). The layer is made whatever happens here.
             let _ = panel_docking::show_panel(self, "properties", Some(true));
+            // A new Gradient Map layer opens its Gradient Editor at once, so its gradient can be chosen and edited.
+            if id == "layer.newAdjustmentLayer.gradientMap" && !self.automation_input && !cfg!(test) {
+                crate::gradient_map_ui::open(self);
+            }
         }
         // Making a new selection reveals its outline after View > Extras was hidden (#5597).
         // These interactive selection commands complete inline; a failed command, deselection,

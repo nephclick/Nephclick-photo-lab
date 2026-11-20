@@ -754,6 +754,7 @@ pub(super) mod sizing;
 pub mod smart_filter_dialog;
 pub mod snapshot_dialog;
 pub(crate) mod solid_fill_ui;
+pub(crate) mod gradient_map_ui;
 pub mod stack_dialog;
 pub mod stroke_ui;
 pub mod targa_options_ui;

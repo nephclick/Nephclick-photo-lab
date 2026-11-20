@@ -469,6 +469,10 @@ pub(crate) fn invoke_unguarded(app: &mut NephclickPhotoLabApp, ctx: &egui::Conte
         // Solid Color fills and solid-colour shapes use the Color Picker, Pattern fills the Pattern
         // Fill dialog; other adjustment / fill / shape controls use Properties.
         "layer.layerContentOptions" => {
+            // A Gradient Map layer pops up its Gradient Editor, as a Solid Color layer pops up the Color Picker.
+            if params.as_object().is_none_or(|o| o.is_empty()) && crate::gradient_map_ui::open(app) {
+                return Ok(json!({"dialog": "gradientEditor"}));
+            }
             if let Some(dialog) = crate::solid_fill_ui::open(app).or_else(|| crate::shape_fill_ui::open(app)) {
                 return Ok(dialog_reply(dialog));
             }
