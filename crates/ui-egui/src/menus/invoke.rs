@@ -484,6 +484,10 @@ pub(crate) fn invoke_unguarded(app: &mut NephclickPhotoLabApp, ctx: &egui::Conte
             if let Some(dialog) = crate::pattern_fill_ui::open(app) {
                 return Ok(dialog_reply(dialog));
             }
+            // Adjustment and fill layers pop up their controls in a window, as Photoshop's adjustment dialogs do.
+            if params.as_object().is_none_or(|o| o.is_empty()) && crate::layer_popup_ui::open(app) {
+                return Ok(json!({"dialog": "layerProperties"}));
+            }
             let r = app.run(id, params)?;
             crate::panel_docking::show_panel(app, "properties", Some(true))?;
             Ok(r)

@@ -346,6 +346,10 @@ pub struct Interface {
     /// Theme ids shown in the appearance button's context menu.
     #[serde(deserialize_with = "theme_ids::themes")]
     pub favorite_themes: Vec<String>,
+    /// Settings saved before Midnight became the default dark theme have been moved to it once: a dark slot still on
+    /// the old default (`craft.artcraft`) took Midnight, and a theme chosen afterwards stays.
+    #[serde(default)]
+    pub midnight_adopted: bool,
     /// Pasteboard colour in standard screen mode (`canvasCustomColor` when "custom").
     pub canvas_color: CanvasColor,
     pub canvas_custom_color: String,
@@ -430,9 +434,10 @@ impl Default for Interface {
     fn default() -> Self {
         Self {
             appearance_mode: AppearanceMode::Dark,
-            dark_theme: "craft.artcraft".into(),
+            dark_theme: "craft.midnight".into(),
             light_theme: "craft.pro".into(),
             favorite_themes: Vec::new(),
+            midnight_adopted: true,
             canvas_color: CanvasColor::Default,
             canvas_custom_color: "#282828".into(),
             show_canvas_dots: true,
@@ -2069,6 +2074,13 @@ impl Session {
         // An Effect Cache the field no longer accepts (above the 32-bit cap, saved before the cap
         // or by a 64-bit build; a hand-edited 0) loads as the nearest value it does. Otherwise
         // Apply from another Preferences tab, which validates every value, would reject it.
+        // Midnight became the default dark theme: settings still on the previous default move to it, once.
+        if !prefs.interface.midnight_adopted {
+            if prefs.interface.dark_theme == "craft.artcraft" {
+                prefs.interface.dark_theme = "craft.midnight".into();
+            }
+            prefs.interface.midnight_adopted = true;
+        }
         prefs.performance.effect_cache_mb = accepted_effect_cache_mb(prefs.performance.effect_cache_mb, SMALL_ADDRESS_SPACE);
         self.color.settings = color_settings;
         // A number outside 0..MAX reads, but `validate_settings` would then refuse every later

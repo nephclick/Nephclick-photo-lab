@@ -68,8 +68,8 @@ fn targets(app: &NephclickPhotoLabApp) -> Vec<(LayerId, String)> {
 
 fn field(ui: &mut egui::Ui, label: &str, value: &mut String) {
     ui.horizontal(|ui| {
-        let l = ui.add_sized([96.0, 24.0], egui::Label::new(label));
-        ui.add(egui::TextEdit::singleline(value).desired_width(220.0).char_limit(255)).labelled_by(l.id);
+        let l = ui.add_sized([96.0, crate::theme::CONTROL_HEIGHT], egui::Label::new(label));
+        ui.add(egui::TextEdit::singleline(value).desired_width(crate::theme::FIELD_WIDTH).char_limit(255)).labelled_by(l.id);
     });
 }
 
@@ -83,13 +83,13 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(false)
         .resizable(false)
-        .default_width(380.0)
+        .default_width(crate::theme::DIALOG_WIDTH_SM)
         .show(ctx, |ui| {
             ui.label(crate::i18n::fmt(tl!("{n} layers selected, numbered from the top of the Layers panel."), &[("n", &layers.len().to_string())]));
             ui.add_space(6.0);
             field(ui, tl!("Name:"), &mut form.base);
             ui.horizontal(|ui| {
-                let l = ui.add_sized([96.0, 24.0], egui::Label::new(tl!("Start at:")));
+                let l = ui.add_sized([96.0, crate::theme::CONTROL_HEIGHT], egui::Label::new(tl!("Start at:")));
                 ui.add(egui::DragValue::new(&mut form.start).range(0..=1_000_000)).labelled_by(l.id);
                 let d = ui.label(tl!("Digits:"));
                 ui.add(egui::DragValue::new(&mut form.digits).range(0..=6)).labelled_by(d.id);
@@ -113,16 +113,9 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
                 ui.weak(crate::i18n::fmt(tl!("and {n} more"), &[("n", &(layers.len() - PREVIEW_ROWS).to_string())]));
             }
             ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button(tl!("Cancel")).clicked() || crate::window_keys::take_escape(ui.ctx()) {
-                    cancel = true;
-                }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.add_enabled(form.does_something() && !layers.is_empty(), egui::Button::new(tl!("Rename"))).clicked() {
-                        apply = true;
-                    }
-                });
-            });
+            let buttons = crate::theme::dialog_buttons(ui, tl!("Rename"), form.does_something() && !layers.is_empty());
+            apply = buttons.confirm;
+            cancel = buttons.cancel;
         });
     if apply {
         let ids: Vec<u64> = layers.iter().map(|(id, _)| id.0).collect();

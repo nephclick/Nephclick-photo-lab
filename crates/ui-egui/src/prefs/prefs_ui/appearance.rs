@@ -82,7 +82,7 @@ pub(crate) fn step_brightness(app: &mut NephclickPhotoLabApp, ctx: &egui::Contex
 pub fn theme_menu(app: &NephclickPhotoLabApp) -> ThemeMenu {
     let interface = &app.session.prefs().interface;
     let mut rows = Vec::new();
-    for (row, dark) in [(AppTheme::light_row(), false), (AppTheme::dark_row(), true)] {
+    for (row, dark) in [(AppTheme::light_row().to_vec(), false), (AppTheme::dark_row().to_vec(), true)] {
         for theme in &row {
             rows.push(ThemeRow::new(theme.id().clone(), dark, app.framework.theme_name(theme.id(), dark)));
         }

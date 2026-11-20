@@ -58,7 +58,7 @@ pub fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .collapsible(true)
         .resizable(true)
         .default_size([560.0, 520.0])
-        .min_width(420.0)
+        .min_width(crate::theme::DIALOG_WIDTH_MD)
         .show(ctx, |ui| {
             let visuals = ui.visuals().clone();
             ui.label(tl!("Selection runs on this computer. After a one-time download no internet connection is needed."));

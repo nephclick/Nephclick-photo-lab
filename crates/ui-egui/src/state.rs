@@ -180,6 +180,10 @@ pub struct UiState {
     /// Preferences ▸ Type ▸ Recent Fonts; de-duplicated.
     #[serde(default)]
     pub recent_fonts: Vec<String>,
+    /// Adjustment and fill layers open their controls in a floating window (double-click, or a new layer), as
+    /// Photoshop's adjustment dialogs do; off, they stay in the Properties panel.
+    #[serde(default = "yes")]
+    pub adjustments_in_window: bool,
     /// Inline type editing session, if any.
     #[serde(default)]
     pub text_edit: Option<TextEdit>,
@@ -469,6 +473,7 @@ impl Default for UiState {
             spring: None,
             recent_files: Vec::new(),
             recent_fonts: Vec::new(),
+            adjustments_in_window: true,
             text_edit: None,
             type_box_overflow: false,
             type_insertion_style: None,

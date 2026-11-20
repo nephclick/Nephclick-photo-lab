@@ -1,1 +1,21 @@
-{ "all": { "size.dock.column": 290 }, "compact": { "typography.label.size": 12, "typography.mono.size": 12 } }
+{
+  "all": {
+    "size.dock.column": 290,
+    "size.dialog.least": 320,
+    "size.dialog.wrap": 440,
+    "size.dialog.button": 88,
+    "size.length.field.md": 200,
+    "size.length.field.sm": 160,
+    "space.pad.regular": 12,
+    "space.pad.roomy": 20,
+    "space.gap.stack": 8,
+    "space.gap.section": 16,
+    "space.gap.item": 8
+  },
+  "compact": {
+    "typography.label.size": 12,
+    "typography.mono.size": 12,
+    "size.control.md": 28,
+    "size.control.sm": 22
+  }
+}

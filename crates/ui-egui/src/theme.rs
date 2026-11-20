@@ -53,10 +53,14 @@ enum Palette {
     SoftDark,
     /// A low-contrast light theme: pale violet-grey surfaces, softened dark text and a periwinkle accent.
     SoftLight,
+    /// The default dark theme: near-black surfaces, charcoal cards with large rounded corners, pill buttons, muted
+    /// grey text and an orange-red accent.
+    Midnight,
 }
 
 impl Palette {
-    const ALL: [Palette; 14] = [
+    const ALL: [Palette; 15] = [
+        Palette::Midnight,
         Palette::Pro,
         Palette::ProMedium,
         Palette::ProLightGray,
@@ -90,6 +94,7 @@ impl Palette {
             Palette::BreezeDark => ("craft.breeze", true),
             Palette::SoftDark => ("craft.soft", true),
             Palette::SoftLight => ("craft.soft", false),
+            Palette::Midnight => ("craft.midnight", true),
         }
     }
 
@@ -109,6 +114,7 @@ impl Palette {
             Palette::BreezeDark => "Breeze Dark",
             Palette::SoftDark => "Soft Dark",
             Palette::SoftLight => "Soft Light",
+            Palette::Midnight => "Midnight",
         }
     }
 
@@ -117,8 +123,8 @@ impl Palette {
         [Palette::ProLight, Palette::ProLightGray, Palette::StudioLight, Palette::Classic, Palette::Adwaita, Palette::BreezeLight, Palette::SoftLight];
 
     /// The Dark Theme row, in Nephclick PhotoLab's order.
-    const DARK_ROW: [Palette; 7] =
-        [Palette::ProMedium, Palette::Pro, Palette::Studio, Palette::SolarizedDark, Palette::AdwaitaDark, Palette::BreezeDark, Palette::SoftDark];
+    const DARK_ROW: [Palette; 8] =
+        [Palette::Midnight, Palette::ProMedium, Palette::Pro, Palette::Studio, Palette::SolarizedDark, Palette::AdwaitaDark, Palette::BreezeDark, Palette::SoftDark];
 
     /// Photoshop's four interface brightnesses, darkest first.
     const BRIGHTNESSES: [Palette; 4] = [Palette::Pro, Palette::ProMedium, Palette::ProLightGray, Palette::ProLight];
@@ -157,9 +163,9 @@ impl PartialEq for AppTheme {
 }
 
 impl Default for AppTheme {
-    /// The suite default, Pro (Medium Gray).
+    /// The suite default, Midnight.
     fn default() -> Self {
-        Self::from(Palette::ProMedium)
+        Self::from(Palette::Midnight)
     }
 }
 
@@ -182,12 +188,12 @@ palette_themes! {
     pro => Pro, pro_medium => ProMedium, pro_light_gray => ProLightGray, pro_light => ProLight,
     studio => Studio, studio_light => StudioLight, classic => Classic, solarized_dark => SolarizedDark,
     adwaita => Adwaita, adwaita_dark => AdwaitaDark, breeze_light => BreezeLight, breeze_dark => BreezeDark,
-    soft_dark => SoftDark, soft_light => SoftLight,
+    soft_dark => SoftDark, soft_light => SoftLight, midnight => Midnight,
 }
 
 impl AppTheme {
     /// The themes Nephclick PhotoLab has palettes for, in the order of its Appearance settings.
-    pub fn all() -> [AppTheme; 14] {
+    pub fn all() -> [AppTheme; 15] {
         Palette::ALL.map(AppTheme::from)
     }
 
@@ -197,7 +203,7 @@ impl AppTheme {
     }
 
     /// The themes the Dark Theme row offers, in its order.
-    pub fn dark_row() -> [AppTheme; 7] {
+    pub fn dark_row() -> [AppTheme; 8] {
         Palette::DARK_ROW.map(AppTheme::from)
     }
 
@@ -771,6 +777,44 @@ impl Tokens {
             // Soft Dark: our own low-contrast palette on the Studio layout. Muted violet-grey
             // surfaces (never near-black), softened off-white text and a periwinkle accent; the
             // text colours still hold 4.5:1 on every surface (checked by the tests).
+            Palette::Midnight => Tokens {
+                dark: kind.is_dark(),
+                chrome: Color32::from_rgb(15, 15, 15),
+                canvas: Color32::from_rgb(8, 8, 8),
+                dock: Color32::from_rgb(13, 13, 13),
+                card: Color32::from_rgb(22, 22, 22),
+                card_border: Color32::from_rgb(42, 42, 42),
+                field: Color32::from_rgb(30, 30, 30),
+                field_border: Color32::from_rgb(51, 51, 51),
+                hover: Color32::from_rgb(38, 38, 38),
+                pressed: Color32::from_rgb(48, 48, 48),
+                text: Color32::from_rgb(242, 242, 242),
+                text_dim: Color32::from_rgb(166, 166, 166),
+                text_faint: Color32::from_rgb(110, 110, 110),
+                icon: Color32::from_rgb(232, 232, 232),
+                accent: Color32::from_rgb(240, 70, 30),
+                accent_soft: Color32::from_rgba_unmultiplied(240, 70, 30, 46),
+                accent_border: Color32::from_rgba_unmultiplied(240, 70, 30, 128),
+                accent_text: Color32::from_rgb(255, 138, 106),
+                separator: Color32::from_rgb(35, 35, 35),
+                shadow: Color32::from_black_alpha(160),
+                primary_bg: Color32::from_rgb(240, 70, 30),
+                primary_text: Color32::WHITE,
+                danger: Color32::from_rgb(255, 90, 74),
+                warning: Color32::from_rgb(255, 209, 42),
+                radius_sm: 10.0,
+                radius: 16.0,
+                radius_lg: 22.0,
+                bevel: false,
+                pro: false,
+                tab_strip: Color32::TRANSPARENT,
+                row_selected: Color32::TRANSPARENT,
+                histogram_bg: Color32::from_rgb(22, 22, 22),
+                histogram_level: 220,
+                caption_close: Color32::from_rgb(196, 43, 28),
+                caption_close_text: Color32::WHITE,
+                scrim: Color32::from_black_alpha(140),
+            },
             Palette::SoftDark => Tokens {
                 dark: kind.is_dark(),
                 chrome: Color32::from_rgb(58, 58, 68),
@@ -1218,14 +1262,19 @@ pub fn apply(ctx: &egui::Context, theme: &AppTheme) {
             (TextStyle::Monospace, FontId::monospace(12.0)),
         ]
         .into();
-        s.spacing.item_spacing = egui::vec2(10.0, 7.0);
-        s.spacing.button_padding = egui::vec2(14.0, 6.0);
-        s.spacing.interact_size = egui::vec2(24.0, 24.0);
-        s.spacing.slider_width = 150.0;
-        s.spacing.combo_width = 120.0;
-        s.spacing.menu_margin = egui::Margin::same(8);
-        s.spacing.window_margin = egui::Margin::same(18);
+        // One spacing scale and one control size for every window, dialog and popup the app draws itself, so
+        // buttons, fields, dropdowns and sliders line up at the same height and fields of a form share a width.
+        s.spacing.item_spacing = egui::vec2(SPACE_SM, SPACE_SM);
+        s.spacing.button_padding = egui::vec2(SPACE_MD + 2.0, (CONTROL_HEIGHT - 16.0) / 2.0);
+        s.spacing.interact_size = egui::vec2(40.0, CONTROL_HEIGHT);
+        s.spacing.slider_width = FIELD_WIDTH - 40.0;
+        s.spacing.combo_width = FIELD_WIDTH;
+        s.spacing.text_edit_width = FIELD_WIDTH;
+        s.spacing.menu_margin = egui::Margin::same(SPACE_SM as i8);
+        s.spacing.window_margin = egui::Margin::same(DIALOG_PADDING as i8);
+        s.spacing.indent = SPACE_LG;
         s.spacing.icon_width = 14.0;
+        s.spacing.icon_spacing = SPACE_XS + 2.0;
         s.visuals.indent_has_left_vline = false;
         s.interaction.tooltip_delay = TOOLTIP_DELAY;
         // Thin overlay scrollbars that appear on hover (Photoshop/macOS style).
@@ -1246,6 +1295,23 @@ pub fn apply(ctx: &egui::Context, theme: &AppTheme) {
     ctx.set_style_of(egui::Theme::Light, Arc::clone(&style));
     ctx.set_style_of(egui::Theme::Dark, style);
 }
+
+/// The spacing scale every app-drawn window, dialog and popup uses: 4, 8, 12, 16, 24.
+pub const SPACE_XS: f32 = 4.0;
+pub const SPACE_SM: f32 = 8.0;
+pub const SPACE_MD: f32 = 12.0;
+pub const SPACE_LG: f32 = 16.0;
+pub const SPACE_XL: f32 = 24.0;
+/// The height of every button, field, dropdown and slider row.
+pub const CONTROL_HEIGHT: f32 = 28.0;
+/// The width of text fields and dropdowns in a form, so one form's fields line up.
+pub const FIELD_WIDTH: f32 = 200.0;
+/// The widths of app-drawn dialogs: small forms, standard dialogs, and editors with a preview.
+pub const DIALOG_WIDTH_SM: f32 = 360.0;
+pub const DIALOG_WIDTH_MD: f32 = 440.0;
+pub const DIALOG_WIDTH_LG: f32 = 520.0;
+/// The padding inside dialogs and popup windows.
+pub const DIALOG_PADDING: f32 = 20.0;
 
 /// Seconds the pointer rests on a control before its tooltip shows.
 pub const TOOLTIP_DELAY: f32 = 0.35;
@@ -1520,4 +1586,36 @@ pub mod live {
         }
         true
     }
+}
+
+/// What a dialog's button row was asked for this pass.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct DialogButtons {
+    pub(crate) confirm: bool,
+    pub(crate) cancel: bool,
+}
+
+/// The button row every app-drawn dialog ends with: right-aligned, Cancel then the main action (`confirm`, filled in
+/// the accent colour), each at least the dialog button width; Esc cancels. `enabled` greys the main action out.
+pub(crate) fn dialog_buttons(ui: &mut egui::Ui, confirm: &str, enabled: bool) -> DialogButtons {
+    let mut out = DialogButtons::default();
+    ui.add_space(SPACE_SM);
+    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        let size = egui::vec2(88.0, CONTROL_HEIGHT);
+        let accent = ui.visuals().hyperlink_color;
+        let fill = if enabled { accent } else { ui.visuals().widgets.inactive.bg_fill };
+        let main = egui::Button::new(egui::RichText::new(confirm).color(if enabled { Color32::WHITE } else { ui.visuals().weak_text_color() }))
+            .fill(fill)
+            .min_size(size);
+        if ui.add_enabled(enabled, main).clicked() {
+            out.confirm = true;
+        }
+        if ui.add(egui::Button::new(tl!("Cancel")).min_size(size)).clicked() {
+            out.cancel = true;
+        }
+    });
+    if crate::window_keys::take_escape(ui.ctx()) {
+        out.cancel = true;
+    }
+    out
 }

@@ -42,7 +42,7 @@ fn kind_icon(content: &LayerContent) -> &'static str {
 }
 
 /// "Type Layer", "Curves", "Artboard"…
-fn kind_label(layer: &Layer) -> String {
+pub(crate) fn kind_label(layer: &Layer) -> String {
     if layer.frame.is_some() {
         return tl!("Frame").into();
     }
@@ -110,7 +110,15 @@ fn document_body(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, selected: us
 }
 
 /// The controls of the active layer by kind. A frame comes before the kind sections.
-fn layer_body(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, layer: &Layer) {
+pub(crate) fn layer_body(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, layer: &Layer) {
+    // A layer open in its own window is edited there, never in two places at once.
+    if crate::layer_popup_ui::shows(layer.id) && !crate::layer_popup_ui::drawing() {
+        ui.weak(tl!("This layer is open in its own window."));
+        if clicked(&Button::new(tl!("Edit here instead")).sizing(Sizing::FillWidth).show(ui)) {
+            crate::layer_popup_ui::close();
+        }
+        return;
+    }
     if let LayerContent::Adjustment(adj) = &layer.content {
         adjustment_controls(app, ui, layer.id, adj);
     } else if layer.artboard().is_some() {

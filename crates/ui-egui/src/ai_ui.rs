@@ -553,7 +553,7 @@ pub fn show_light_pose(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(true)
         .resizable(true)
-        .default_width(420.0)
+        .default_width(crate::theme::DIALOG_WIDTH_MD)
         .show(ctx, |ui| {
             ui.label(tl!("Describe the new light. The AI service in Preferences › AI Models rebuilds the photo's lighting, highlights and shadows; the result is added as a new layer."));
             ui.add_space(6.0);

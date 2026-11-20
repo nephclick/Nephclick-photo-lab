@@ -195,7 +195,7 @@ fn rendering_mode_display_respects_explicit_mode_and_legacy_disable() {
 #[test]
 fn appearance_resolves_both_saved_themes_and_follows_system() {
     let mut interface = prefs::Interface { appearance_mode: AppearanceMode::Auto, ..prefs::Interface::default() };
-    assert_eq!(selected_theme(&interface, Some(egui::Theme::Dark)), shown(AppTheme::pro_medium()));
+    assert_eq!(selected_theme(&interface, Some(egui::Theme::Dark)), shown(AppTheme::midnight()));
     assert_eq!(selected_theme(&interface, Some(egui::Theme::Light)), shown(AppTheme::pro_light()));
     interface.dark_theme = "craft.studio".into();
     interface.light_theme = "craft.classic".into();
@@ -265,6 +265,8 @@ fn appearance_button_cycles_modes_without_losing_theme_choices() {
 fn darken_and_lighten_interface_step_through_photoshops_brightnesses_and_stop_at_the_ends() {
     let mut app = NephclickPhotoLabApp::new(nephclick_photolab_engine::Session::new(), crate::Services::default());
     let ctx = app.ctx().clone();
+    // Starting from Photoshop's default brightness (the app's own default is Midnight).
+    app.run("prefs.set", json!({"values": {"interface.darkTheme": "craft.artcraft"}})).unwrap();
     sync_appearance(&mut app, &ctx);
     assert_eq!(app.ui.theme, AppTheme::pro_medium(), "Photoshop's default brightness");
     let press = |app: &mut NephclickPhotoLabApp, id: &str| crate::menus::invoke(app, &ctx, id, json!({})).unwrap();

@@ -191,8 +191,8 @@ fn mode_choice(mode: AppearanceMode) -> ModeChoice {
     }
 }
 
-/// Nephclick PhotoLab's theme in the dark mode when nobody chose one: Pro (Medium Gray).
-const DEFAULT_DARK: &str = "craft.artcraft";
+/// Nephclick PhotoLab's theme in the dark mode when nobody chose one: Midnight.
+const DEFAULT_DARK: &str = "craft.midnight";
 /// Nephclick PhotoLab's theme in the light mode when nobody chose one: Pro (Light).
 const DEFAULT_LIGHT: &str = "craft.pro";
 
@@ -795,5 +795,16 @@ mod tests {
     #[test]
     fn the_root_carries_the_size_overrides() {
         assert_eq!(*super::base_root().sizes, craft::theme::AppSizes::parse(super::SIZES).unwrap());
+    }
+}
+
+#[cfg(test)]
+mod sizes_tests {
+    /// A key the size set doesn't know makes the runtime drop the whole file: every override must parse.
+    #[test]
+    fn the_size_overrides_parse() {
+        if let Err(errors) = craft::theme::AppSizes::parse(super::SIZES) {
+            panic!("sizes.json: {:?}", errors.0.iter().map(ToString::to_string).collect::<Vec<_>>());
+        }
     }
 }

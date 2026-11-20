@@ -16,6 +16,7 @@ pub fn alias(name: &str) -> Option<(&'static str, bool)> {
     Some(match name.to_ascii_lowercase().replace([' ', '_', '-', '(', ')'], "").as_str() {
         "pro" | "prodark" | "photoshop" | "dark" => ("craft.pro", true),
         "promedium" | "promediumgray" | "medium" | "mediumgray" => ("craft.artcraft", true),
+        "midnight" => ("craft.midnight", true),
         "prolightgray" | "lightgray" | "mediumlight" => ("craft.pro-light-gray", false),
         "prolight" | "prolightest" | "lightest" | "light" => ("craft.pro", false),
         "studio" | "studiodark" => ("craft.studio", true),
