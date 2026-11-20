@@ -215,6 +215,11 @@ fn invoke_shell_commands(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, id
         crate::ai_models_ui::open(app);
         return Some(Ok(json!({"window": "aiSelectionModels"})));
     }
+    // Layer › New › Light Pose Layer (AI Generate): the window that asks for the lighting.
+    if id == "layer.new.lightPoseAi" {
+        app.ai.light_pose_window = true;
+        return Some(Ok(json!({"window": "lightPoseAi"})));
+    }
     // Save for Web's dialog would export the committed document, not the open Free Transform (#6737).
     if id == crate::transform_tool::SAVE_FOR_WEB
         && let Some(r) = crate::transform_tool::intercept(app, id)
@@ -722,6 +727,7 @@ fn invoke_view_command(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, id: 
             Some(crate::adjust_dialog::open_last(app, a).map(dialog_reply))
         }
         "view.editSelectedGuides" => Some(crate::new_guide_ui::open_edit(app).map(|_| Value::Null)),
+        "view.splitView" => Some(crate::canvas::split_view::command(app, params)),
         "view.clearSelectedGuides" => {
             Some(crate::guide_select::delete_selected(app).and_then(|done| if done { Ok(Value::Null) } else { Err("No guide is selected".to_string()) }))
         }

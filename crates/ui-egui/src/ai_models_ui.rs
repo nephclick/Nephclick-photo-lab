@@ -49,7 +49,7 @@ pub fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         ctx.request_repaint_after(POLL);
     }
     let installed = |pack: &str| status.get(pack).and_then(|p| p.get("installed")).and_then(Value::as_bool).unwrap_or(false);
-    let (subject_ready, prompt_ready) = (installed("subject"), installed("prompt"));
+    let (subject_ready, prompt_ready, depth_ready) = (installed("subject"), installed("prompt"), installed("depth"));
     let mut open = true;
     let mut action: Option<(&'static str, Value)> = None;
     egui::Window::new(tl!("AI Selection Models"))
@@ -57,7 +57,7 @@ pub fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .open(&mut open)
         .collapsible(true)
         .resizable(true)
-        .default_size([560.0, 440.0])
+        .default_size([560.0, 520.0])
         .min_width(420.0)
         .show(ctx, |ui| {
             let visuals = ui.visuals().clone();
@@ -89,6 +89,24 @@ pub fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
                     }
                     if subject_ready && ui.add_enabled(!busy, egui::Button::new(tl!("Remove"))).clicked() {
                         action = Some(("select.aiModels.remove", json!({"pack": "subject"})));
+                    }
+                });
+            });
+            ui.add_space(8.0);
+            card(ui, &mut |ui| {
+                ui.horizontal(|ui| {
+                    ui.strong(tl!("Light Pose depth model"));
+                    badge(ui, depth_ready);
+                });
+                ui.label(tl!(
+                    "Rebuilds the 3D shape of a photo for Layer › New › Light Pose Layer, so new light casts real shadows and highlights. About 67 MB."
+                ));
+                ui.horizontal(|ui| {
+                    if !depth_ready && ui.add_enabled(!busy, egui::Button::new(tl!("Download (67 MB)"))).clicked() {
+                        action = Some(("select.aiModels.install", json!({"pack": "depth"})));
+                    }
+                    if depth_ready && ui.add_enabled(!busy, egui::Button::new(tl!("Remove"))).clicked() {
+                        action = Some(("select.aiModels.remove", json!({"pack": "depth"})));
                     }
                 });
             });

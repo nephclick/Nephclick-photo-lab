@@ -37,6 +37,15 @@ pub const SUBJECT_MODEL_BYTES: u64 = 178_648_008;
 /// The subject model's SHA-256.
 pub const SUBJECT_MODEL_SHA256: &str = "60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a";
 
+/// The Light Pose depth model's file name (MiDaS v2.1 Small, MIT).
+pub const DEPTH_MODEL_FILE: &str = "midas-v21-small-256.onnx";
+/// Where the depth model is downloaded from.
+pub const DEPTH_MODEL_URL: &str = "https://github.com/isl-org/MiDaS/releases/download/v2_1/model-small.onnx";
+/// The depth model's size in bytes.
+pub const DEPTH_MODEL_BYTES: u64 = 66_764_249;
+/// The depth model's SHA-256.
+pub const DEPTH_MODEL_SHA256: &str = "2d8c6cb8f415229daf1eb041024208e2608c9f98e17c81cc7c6ecb449c56fd58";
+
 /// The portable CPython release the Prompt & Click pack installs.
 const PYTHON_RELEASE: &str = "20241016";
 const PYTHON_VERSION: &str = "3.12.7";
@@ -81,6 +90,16 @@ pub fn models_root() -> PathBuf {
 /// The subject model's path.
 pub fn subject_model_path() -> PathBuf {
     models_root().join(SUBJECT_MODEL_FILE)
+}
+
+/// The depth model's path.
+pub fn depth_model_path() -> PathBuf {
+    models_root().join(DEPTH_MODEL_FILE)
+}
+
+/// Whether the Light Pose depth model is installed.
+pub fn depth_installed() -> bool {
+    std::fs::metadata(depth_model_path()).is_ok_and(|meta| meta.is_file() && meta.len() == DEPTH_MODEL_BYTES)
 }
 
 /// The Prompt & Click pack's folder.
@@ -135,6 +154,8 @@ pub enum Pack {
     Subject,
     /// Python, PyTorch, Transformers, SAM 2.1 Tiny and Grounding DINO Tiny.
     Prompt,
+    /// Light Pose's depth model.
+    Depth,
 }
 
 impl Pack {
@@ -143,6 +164,7 @@ impl Pack {
         match name {
             "subject" => Some(Pack::Subject),
             "prompt" => Some(Pack::Prompt),
+            "depth" => Some(Pack::Depth),
             _ => None,
         }
     }
@@ -204,6 +226,7 @@ pub fn status() -> Value {
         "modelsDir": models_root().to_string_lossy(),
         "subject": {"installed": subject_installed(), "bytes": SUBJECT_MODEL_BYTES, "source": SUBJECT_MODEL_URL},
         "prompt": {"installed": prompt_installed(), "models": [SAM_MODEL, DINO_MODEL]},
+        "depth": {"installed": depth_installed(), "bytes": DEPTH_MODEL_BYTES, "source": DEPTH_MODEL_URL},
         "progress": progress,
     })
 }
@@ -225,6 +248,7 @@ pub fn start(pack: Pack) -> Result<(), AiError> {
         let outcome = std::panic::catch_unwind(|| match pack {
             Pack::Subject => install_subject(),
             Pack::Prompt => install_prompt(),
+            Pack::Depth => install_depth(),
         })
         .unwrap_or_else(|_| Err(AiError::Unsupported("the install stopped with an internal error".into())));
         with_progress(|p| {
@@ -268,6 +292,10 @@ pub fn remove(pack: Pack) -> Result<(), AiError> {
         Pack::Prompt => {
             crate::selection_manager::stop_worker();
             gone(std::fs::remove_dir_all(prompt_dir()))
+        }
+        Pack::Depth => {
+            crate::depth_model::unload();
+            gone(std::fs::remove_file(depth_model_path()))
         }
     }
 }
@@ -340,6 +368,15 @@ fn install_subject() -> Result<(), AiError> {
     }
     stage("Downloading the subject model (about 170 MB)…");
     download(SUBJECT_MODEL_URL, &subject_model_path(), SUBJECT_MODEL_BYTES + 1, Some((SUBJECT_MODEL_BYTES, SUBJECT_MODEL_SHA256)))
+}
+
+/// Installs the Light Pose depth model.
+fn install_depth() -> Result<(), AiError> {
+    if depth_installed() {
+        return Ok(());
+    }
+    stage("Downloading the Light Pose depth model (about 67 MB)…");
+    download(DEPTH_MODEL_URL, &depth_model_path(), DEPTH_MODEL_BYTES + 1, Some((DEPTH_MODEL_BYTES, DEPTH_MODEL_SHA256)))
 }
 
 /// The portable CPython build for this machine, by its target triple.
@@ -442,6 +479,7 @@ mod tests {
     fn packs_parse_by_name() {
         assert_eq!(Pack::parse("subject"), Some(Pack::Subject));
         assert_eq!(Pack::parse("prompt"), Some(Pack::Prompt));
+        assert_eq!(Pack::parse("depth"), Some(Pack::Depth));
         assert_eq!(Pack::parse("other"), None);
     }
 

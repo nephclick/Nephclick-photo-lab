@@ -140,6 +140,12 @@ impl FontSourceState {
 /// engine prefs), the recent list (capped by the preference at once) and the filters.
 pub(crate) fn finish_font_state(app: &mut NephclickPhotoLabApp, state: FontSourceState) {
     let FontSourceState { settings, before, filters, .. } = state;
+    // Typing in a font field (the picker's search): look for fonts installed since launch, so a font just installed
+    // on this machine is found without restarting. Throttled and run on a background thread.
+    let typing = app.ctx().input(|i| i.events.iter().any(|e| matches!(e, egui::Event::Text(_)) || matches!(e, egui::Event::Key { pressed: true, key: egui::Key::Backspace, .. })));
+    if typing && app.ctx().memory(|m| m.focused().is_some()) {
+        nephclick_photolab_text::fonts::refresh_installed_fonts();
+    }
     let stars = before
         .favorites
         .iter()

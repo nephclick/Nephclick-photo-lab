@@ -55,6 +55,7 @@ asks; nothing here is committed or bundled in an installer. RAW Develop's built-
 | Path | Title | Author | Source | License |
 |---|---|---|---|---|
 | `ai_selection/isnet-general-use.onnx` (SHA-256 `60920e99…964a`, checked after download) | ISNet (DIS) general-use salient-object model, ONNX export | Xuebin Qin et al. (DIS); ONNX export by the rembg project | <https://github.com/xuebinqin/DIS>, file from <https://github.com/danielgatis/rembg/releases/tag/v0.0.0> | Apache-2.0 (model); rembg MIT |
+| `ai_selection/midas-v21-small-256.onnx` (SHA-256 `2d8c6cb8…fd58`, checked after download) | MiDaS v2.1 Small monocular depth model (Light Pose) | Intel ISL (René Ranftl et al.) | <https://github.com/isl-org/MiDaS/releases/tag/v2_1> | MIT |
 | `ai_selection/prompt/hf/` (`facebook/sam2.1-hiera-tiny`) | SAM 2.1 Hiera Tiny weights | Meta AI | <https://huggingface.co/facebook/sam2.1-hiera-tiny> | Apache-2.0 |
 | `ai_selection/prompt/hf/` (`IDEA-Research/grounding-dino-tiny`) | Grounding DINO Tiny weights | IDEA Research | <https://huggingface.co/IDEA-Research/grounding-dino-tiny> | Apache-2.0 |
 | `ai_selection/prompt/python/` | Portable CPython 3.12.7 (python-build-standalone 20241016) | Python Software Foundation; builds by Astral | <https://github.com/astral-sh/python-build-standalone> | PSF-2.0 (CPython) and the licences of its bundled libraries, listed in the download |

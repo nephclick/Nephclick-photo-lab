@@ -35,6 +35,7 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 pub mod abr_map;
+pub mod editable_pdf;
 mod adjust_map;
 pub mod affinity;
 pub mod annotations_map;
@@ -443,6 +444,9 @@ pub struct ExportOptions {
     /// omit it; check the manifest's `full_composite` member ([`nephclick_photolab_format::read_full_composite`]
     /// reads it). Off by default.
     pub pcraft_full_composite: bool,
+    /// `.pdf`: an editable PDF ([`editable_pdf`]): the flattened page plus the whole layered document embedded,
+    /// which Nephclick PhotoLab opens back with every layer. Off: a plain PDF. Save turns it on; Export As leaves it off.
+    pub pdf_editable: bool,
 }
 
 impl Default for ExportOptions {
@@ -462,6 +466,7 @@ impl Default for ExportOptions {
             read_linked_files: true,
             pdf_spot_plates: true,
             pcraft_full_composite: false,
+            pdf_editable: false,
         }
     }
 }
@@ -1007,6 +1012,11 @@ fn import_stages(
     opts: &ImportOptions,
     damaged: &mut bool,
 ) -> Result<ImportResult, IoError> {
+    // An editable PDF opens as the layered document it carries.
+    if let Some(native) = editable_pdf::extract(bytes) {
+        let document = nephclick_photolab_format::load_from_bytes(native)?;
+        return Ok(ImportResult { warnings: open_warnings(&document), document, source_read_only: false, preview_only: false });
+    }
     let selected = if let Some(ext) = as_ext {
         let ext = ext.trim_start_matches('.').to_ascii_lowercase();
         if matches!(ext.as_str(), "pdf" | "ai") {
@@ -1200,6 +1210,15 @@ fn export_stages_with_renderer(
             res.warnings.extend(r.drain_diagnostics());
         }
         return Ok(res.into());
+    }
+    if ext == "pdf" && opts.pdf_editable {
+        // The layered document first, as a native save would write it; then the page around it.
+        let inner = ExportOptions { pdf_editable: false, ..opts.clone() };
+        let native = with_span(ctl, 0.0, 0.8, |ctl| checked_stages(doc, &format!("embedded.{}", nephclick_photolab_format::EXTENSION), &inner, ctl, None))?;
+        let native = native.encoded.into_bytes()?;
+        ctl.check().map_err(|_| IoError::Cancelled)?;
+        let bytes = editable_pdf::write(doc, &native)?;
+        return Ok(ExportResult { bytes, warnings: Vec::new() }.into());
     }
     if ext == "pdf" {
         let xmp = if opts.xmp == XmpEmbed::All { doc.metadata.xmp.as_deref() } else { None };

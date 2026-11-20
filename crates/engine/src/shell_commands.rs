@@ -46,6 +46,10 @@ pub const SHELL_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("view.editSelectedGuides", "Edit Selected Guides", &["View", "Guides"], None),
     ("view.clearSelectedGuides", "Clear Selected Guides", &["View", "Guides"], None),
     ("view.extras", "Extras", &["View"], Some("Cmd+H")),
+    // Before and after: the image as opened beside, above or in place of the edited one (`canvas::split_view`).
+    ("view.splitView", "Split View", &["View"], Some("Alt+Shift+Y")),
+    // The window of Light Pose's AI Generate (`ai_ui::show_light_pose`); the offline Light Pose is an engine command.
+    ("layer.new.lightPoseAi", "Light Pose Layer (AI Generate)…", &["Layer", "New"], None),
     ("view.show.targetPath", "Target Path", &["View", "Show"], Some("Cmd+Shift+H")),
     ("view.screenMode.cycle", "Cycle Screen Mode", &[], Some("F")),
     ("view.screenMode.cycleBack", "Cycle Screen Mode Backward", &[], Some("Shift+F")),

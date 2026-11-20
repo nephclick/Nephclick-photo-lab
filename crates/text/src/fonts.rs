@@ -307,6 +307,32 @@ impl FontDb {
         }
     }
 
+    /// Registers the installed font files the Catalog lists that this database hasn't loaded yet: fonts
+    /// installed while the app runs, after [`refresh_installed_fonts`] rescanned. Returns how many files it added.
+    pub fn load_new_system_fonts(&mut self, known: &mut std::collections::HashSet<std::path::PathBuf>) -> usize {
+        if !self.system_loaded {
+            return 0;
+        }
+        #[cfg_attr(target_arch = "wasm32", allow(unused_mut))]
+        let mut added = 0;
+        #[cfg(target_arch = "wasm32")]
+        let _ = &known;
+        #[cfg(not(target_arch = "wasm32"))]
+        for path in installed_font_files() {
+            if known.insert(path.clone()) {
+                self.fcx.collection.load_fonts_from_paths([path]);
+                added += 1;
+            }
+        }
+        if added > 0 {
+            self.ps_cache.clear();
+            self.face_cache.clear();
+            self.traits_cache.clear();
+            self.refresh_generics();
+        }
+        added
+    }
+
     /// Registers font data (TTF/OTF, or every face of a TTC/OTC). Returns the family names added.
     pub fn register_font_data(&mut self, bytes: Vec<u8>) -> Vec<String> {
         self.register_blob(Blob::new(Arc::new(bytes)), None)
@@ -943,6 +969,40 @@ pub fn installed_font_files() -> Vec<std::path::PathBuf> {
         }
     }
     files
+}
+
+/// Looks for fonts installed or removed since the last scan, without blocking: on a background thread, at most
+/// once every two seconds, it rescans the installed font folders when they changed and registers the new files
+/// with the shared engine. The font menus list the Catalog, whose generation moves when the rescan found anything,
+/// so they show new fonts on their next pass. Called while the user types in a font field. No-op on the web.
+pub fn refresh_installed_fonts() {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+        static RUNNING: AtomicBool = AtomicBool::new(false);
+        static LAST: AtomicU64 = AtomicU64::new(0);
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64);
+        if now.saturating_sub(LAST.load(Ordering::Relaxed)) < 2000 || !catalog().is_ready() || RUNNING.swap(true, Ordering::SeqCst) {
+            return;
+        }
+        LAST.store(now, Ordering::Relaxed);
+        let spawned = std::thread::Builder::new().name("nephclick-photolab-font-refresh".into()).spawn(|| {
+            static KNOWN: std::sync::Mutex<Option<HashSet<std::path::PathBuf>>> = std::sync::Mutex::new(None);
+            let mut known = KNOWN.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            // The first refresh learns what the launch scan already loaded, before it rescans.
+            let known = known.get_or_insert_with(|| installed_font_files().into_iter().collect());
+            if catalog().rescan_if_changed()
+                && let Some(engine) = crate::try_shared()
+            {
+                let mut e = engine.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                e.fonts.load_new_system_fonts(known);
+            }
+            RUNNING.store(false, Ordering::SeqCst);
+        });
+        if spawned.is_err() {
+            RUNNING.store(false, Ordering::SeqCst);
+        }
+    }
 }
 
 /// A platform-private family (macOS names its UI faces with a leading '.'): never listed or
