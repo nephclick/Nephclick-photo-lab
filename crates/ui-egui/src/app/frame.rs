@@ -262,6 +262,7 @@ impl NephclickPhotoLabApp {
         crate::gradient_map_ui::show(self, &ctx);
         crate::batch_rename_ui::show(self, &ctx);
         crate::layer_popup_ui::show(self, &ctx);
+        crate::gradient_editor_window::show(self, &ctx);
         // Layer › New › Light Pose Layer (AI Generate), while it is open.
         crate::ai_ui::show_light_pose(self, &ctx);
         updates_ui::show(self, &ctx);

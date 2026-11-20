@@ -363,7 +363,7 @@ fn next_seed(seed: u64, time: f64) -> u64 {
 }
 
 /// Two to six random colour stops, spread over the gradient.
-fn random_solid(seed: u64) -> Vec<ColorStop> {
+pub(crate) fn random_solid(seed: u64) -> Vec<ColorStop> {
     let mut r = Rng(seed);
     let n = 2 + (r.next() % 5) as usize;
     let mut stops: Vec<ColorStop> = (0..n)

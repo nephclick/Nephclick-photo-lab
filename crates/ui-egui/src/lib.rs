@@ -178,6 +178,7 @@ pub(crate) use dialogs::solid_fill_ui;
 pub(crate) use dialogs::gradient_map_ui;
 pub(crate) use dialogs::batch_rename_ui;
 pub(crate) use dialogs::layer_popup_ui;
+pub(crate) use dialogs::gradient_editor_window;
 pub use dialogs::stack_dialog;
 pub use dialogs::stroke_ui;
 pub use dialogs::targa_options_ui;
