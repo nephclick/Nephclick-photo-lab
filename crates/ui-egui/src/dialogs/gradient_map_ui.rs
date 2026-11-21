@@ -141,6 +141,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .collapsible(true)
         .resizable(true)
         .default_width(crate::theme::DIALOG_WIDTH_LG)
+        .min_width(crate::theme::DIALOG_WIDTH_MD)
         .default_pos(ctx.content_rect().center() - egui::vec2(230.0, 260.0))
         .show(ctx, |ui| editor_ui(ui, &mut editor, &presets, &mut asked));
     if !open {
@@ -208,7 +209,8 @@ fn editor_ui(ui: &mut egui::Ui, editor: &mut Editor, presets: &[craft::draw::ui:
     // Name and New.
     ui.horizontal(|ui| {
         let label = ui.label(tl!("Name:"));
-        ui.add(egui::TextEdit::singleline(&mut editor.name).desired_width(crate::theme::FIELD_WIDTH).char_limit(64)).labelled_by(label.id);
+        let width = (ui.available_width() - 72.0).max(crate::theme::FIELD_WIDTH);
+        ui.add(egui::TextEdit::singleline(&mut editor.name).desired_width(width).char_limit(64)).labelled_by(label.id);
         if ui.button(tl!("New")).on_hover_text(tl!("Save this gradient as a preset")).clicked() {
             asked.save_preset = true;
         }

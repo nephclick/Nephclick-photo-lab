@@ -69,7 +69,8 @@ fn targets(app: &NephclickPhotoLabApp) -> Vec<(LayerId, String)> {
 fn field(ui: &mut egui::Ui, label: &str, value: &mut String) {
     ui.horizontal(|ui| {
         let l = ui.add_sized([96.0, crate::theme::CONTROL_HEIGHT], egui::Label::new(label));
-        ui.add(egui::TextEdit::singleline(value).desired_width(crate::theme::FIELD_WIDTH).char_limit(255)).labelled_by(l.id);
+        let width = ui.available_width().max(crate::theme::FIELD_WIDTH);
+        ui.add(egui::TextEdit::singleline(value).desired_width(width).char_limit(255)).labelled_by(l.id);
     });
 }
 
@@ -81,9 +82,10 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
     egui::Window::new(tl!("Batch Rename Layers"))
         .id(egui::Id::unique("batch-rename-layers"))
         .open(&mut open)
-        .collapsible(false)
-        .resizable(false)
+        .collapsible(true)
+        .resizable(true)
         .default_width(crate::theme::DIALOG_WIDTH_SM)
+        .min_width(crate::theme::DIALOG_WIDTH_SM)
         .show(ctx, |ui| {
             ui.label(crate::i18n::fmt(tl!("{n} layers selected, numbered from the top of the Layers panel."), &[("n", &layers.len().to_string())]));
             ui.add_space(6.0);
@@ -91,6 +93,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
             ui.horizontal(|ui| {
                 let l = ui.add_sized([96.0, crate::theme::CONTROL_HEIGHT], egui::Label::new(tl!("Start at:")));
                 ui.add(egui::DragValue::new(&mut form.start).range(0..=1_000_000)).labelled_by(l.id);
+                ui.add_space(crate::theme::SPACE_MD);
                 let d = ui.label(tl!("Digits:"));
                 ui.add(egui::DragValue::new(&mut form.digits).range(0..=6)).labelled_by(d.id);
             });
@@ -103,7 +106,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
             let plan = form.plan();
             for (i, (_, name)) in layers.iter().take(PREVIEW_ROWS).enumerate() {
                 let new = if form.does_something() { plan.name(name, i) } else { name.clone() };
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     ui.weak(name.as_str());
                     ui.label("→");
                     ui.label(new);

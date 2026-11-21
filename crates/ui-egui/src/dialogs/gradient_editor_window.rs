@@ -28,6 +28,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .collapsible(true)
         .resizable(true)
         .default_width(crate::theme::DIALOG_WIDTH_LG)
+        .min_width(crate::theme::DIALOG_WIDTH_MD)
         .show(ctx, |ui| {
             crate::tools::gradient_ui::editor::show(app, ui);
             ui.add_space(crate::theme::SPACE_SM);

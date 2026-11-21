@@ -87,18 +87,21 @@ fn generate(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, form: &Form) ->
 }
 
 /// Draws the window while it is open.
+#[allow(clippy::disallowed_types)]
 pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
     let Some(mut form) = FORM.lock().unwrap_or_else(PoisonError::into_inner).clone() else { return };
     let (mut open, mut go, mut cancel) = (true, false, false);
     egui::Window::new(tl!("Generative Expand"))
         .id(egui::Id::unique("generative-expand"))
         .open(&mut open)
-        .collapsible(false)
-        .resizable(false)
+        .collapsible(true)
+        .resizable(true)
         .default_width(crate::theme::DIALOG_WIDTH_MD)
+        .min_width(crate::theme::DIALOG_WIDTH_SM)
         .show(ctx, |ui| {
             ui.label(tl!("Make the canvas larger; the AI service paints the new area so the picture continues."));
             ui.add_space(crate::theme::SPACE_SM);
+            let field_w = (ui.available_width() - 110.0).max(crate::theme::FIELD_WIDTH);
             egui::Grid::new("generative-expand-grid").num_columns(2).spacing([crate::theme::SPACE_MD, crate::theme::SPACE_SM]).show(ui, |ui| {
                 let l = ui.label(tl!("Add width:"));
                 ui.add(egui::DragValue::new(&mut form.width).range(0..=MAX_GROW).suffix(" px")).labelled_by(l.id);
@@ -108,7 +111,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
                 ui.end_row();
                 ui.label(tl!("Picture at:"));
                 egui::ComboBox::from_id_salt("generative-expand-anchor")
-                    .width(crate::theme::FIELD_WIDTH)
+                    .width(field_w)
                     .selected_text(tl!(ANCHORS.get(form.anchor).map_or("", |a| a.1)))
                     .show_ui(ui, |ui| {
                         for (i, (_, name)) in ANCHORS.iter().enumerate() {
@@ -117,7 +120,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
                     });
                 ui.end_row();
                 let l = ui.label(tl!("Prompt:"));
-                ui.add(egui::TextEdit::singleline(&mut form.prompt).hint_text(tl!("Optional: what to paint")).desired_width(crate::theme::FIELD_WIDTH))
+                ui.add(egui::TextEdit::singleline(&mut form.prompt).hint_text(tl!("Optional: what to paint")).desired_width(field_w))
                     .labelled_by(l.id);
                 ui.end_row();
             });

@@ -67,9 +67,10 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .id(egui::Id::unique("save-format-step"))
         .open(&mut open)
         .collapsible(false)
-        .resizable(false)
+        .resizable(true)
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
         .default_width(crate::theme::DIALOG_WIDTH_MD)
+        .min_width(crate::theme::DIALOG_WIDTH_SM)
         .show(ctx, |ui| {
             ui.label(tl!("Choose the format to save in:"));
             ui.add_space(6.0);
@@ -86,16 +87,30 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
                 ui.indent(*ext, |ui| ui.weak(*note));
             }
             ui.add_space(8.0);
+            ui.separator();
             ui.horizontal(|ui| {
                 if ui.add(egui::Button::new(tl!("Other Formats…")).min_size(egui::vec2(0.0, crate::theme::CONTROL_HEIGHT))).clicked() {
                     prompt.picked = String::new();
                     go = true;
                 }
-                let buttons = crate::theme::dialog_buttons(ui, tl!("Continue…"), true);
-                go |= buttons.confirm || ui.input(|i| i.key_pressed(egui::Key::Enter));
-                cancel |= buttons.cancel;
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let size = egui::vec2(88.0, crate::theme::CONTROL_HEIGHT);
+                    let accent = ui.visuals().hyperlink_color;
+                    let main = egui::Button::new(egui::RichText::new(tl!("Continue…")).color(egui::Color32::WHITE))
+                        .fill(accent)
+                        .min_size(size);
+                    if ui.add(main).clicked() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        go = true;
+                    }
+                    if ui.add(egui::Button::new(tl!("Cancel")).min_size(size)).clicked() {
+                        cancel = true;
+                    }
+                });
             });
         });
+    if crate::window_keys::take_escape(ctx) {
+        cancel = true;
+    }
     if !open || cancel {
         *PROMPT.lock().unwrap_or_else(PoisonError::into_inner) = None;
         return;

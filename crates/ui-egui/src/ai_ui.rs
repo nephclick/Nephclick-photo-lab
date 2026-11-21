@@ -554,11 +554,12 @@ pub fn show_light_pose(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
         .collapsible(true)
         .resizable(true)
         .default_width(crate::theme::DIALOG_WIDTH_MD)
+        .min_width(crate::theme::DIALOG_WIDTH_SM)
         .show(ctx, |ui| {
             ui.label(tl!("Describe the new light. The AI service in Preferences › AI Models rebuilds the photo's lighting, highlights and shadows; the result is added as a new layer."));
             ui.add_space(6.0);
             ui.add(egui::TextEdit::multiline(&mut prompt).hint_text(tl!("e.g. warm sunset light from the left, long soft shadows")).desired_rows(3).desired_width(f32::INFINITY));
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 for example in [tl!("Golden hour from the left"), tl!("Cool moonlight from above"), tl!("Studio key light, soft fill")] {
                     if ui.small_button(example).clicked() {
                         prompt = example.to_string();
@@ -567,9 +568,14 @@ pub fn show_light_pose(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
             });
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                if ui.add_enabled(!busy, egui::Button::new(if busy { tl!("Relighting…") } else { tl!("Generate") })).clicked() {
+                let fill = ui.visuals().hyperlink_color;
+                let btn = egui::Button::new(egui::RichText::new(if busy { tl!("Relighting…") } else { tl!("Generate") }).color(egui::Color32::WHITE))
+                    .fill(if busy { ui.visuals().widgets.inactive.bg_fill } else { fill })
+                    .min_size(egui::vec2(88.0, crate::theme::CONTROL_HEIGHT));
+                if ui.add_enabled(!busy, btn).clicked() {
                     go = true;
                 }
+                ui.add_space(crate::theme::SPACE_SM);
                 ui.weak(tl!("For offline relighting, use Layer › New › Light Pose Layer…"));
             });
             if let Some(note) = &note {
