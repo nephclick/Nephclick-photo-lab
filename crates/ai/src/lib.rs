@@ -23,6 +23,7 @@ pub mod idea;
 mod json;
 pub mod key;
 pub mod palette;
+pub mod harmony;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod depth_model;
 #[cfg(not(target_arch = "wasm32"))]

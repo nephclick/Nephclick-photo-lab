@@ -37,6 +37,7 @@ use serde_json::{Value, json};
 use crate::NephclickPhotoLabApp;
 
 mod session;
+pub(crate) mod range_pick;
 pub mod values;
 
 pub(crate) use session::PropertiesAdjust;
@@ -307,7 +308,12 @@ fn show(kind: &str, setup: &EditorSetup, ui: &mut Ui, value: &mut AdjustValue, c
             lifted(out.events, |values| AdjustValue::Posterize { values })
         }
         ("hueSaturation", AdjustValue::HueSaturation { value }) => {
-            let out = HueSaturationEditor::new("Hue/Saturation", Bind::bound(value)).context(context).show(ui);
+            let mut editor = HueSaturationEditor::new("Hue/Saturation", Bind::bound(value)).context(context).range_picker(true);
+            if let Some(range) = range_pick::shown().hue {
+                editor = editor.range(range);
+            }
+            let out = editor.show(ui);
+            range_pick::after_hue(out.shown_range, out.pick_range);
             lifted(out.edit.events, |value| AdjustValue::HueSaturation { value })
         }
         ("colorBalance", AdjustValue::ColorBalance { value }) => {
@@ -362,7 +368,12 @@ fn show(kind: &str, setup: &EditorSetup, ui: &mut Ui, value: &mut AdjustValue, c
             AdjustOut { ask, edit }
         }
         ("selectiveColor", AdjustValue::SelectiveColor { value }) => {
-            let out = SelectiveColorEditor::new("Selective Color", Bind::bound(value)).context(context).show(ui);
+            let mut editor = SelectiveColorEditor::new("Selective Color", Bind::bound(value)).context(context).range_picker(true);
+            if let Some(range) = range_pick::shown().selective {
+                editor = editor.range(range);
+            }
+            let out = editor.show(ui);
+            range_pick::after_selective(out.shown_range, out.pick_range);
             lifted(out.edit.events, |value| AdjustValue::SelectiveColor { value })
         }
         // A value of another kind than the editor's: nothing to draw.

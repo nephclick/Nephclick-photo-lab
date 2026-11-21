@@ -86,6 +86,8 @@ pub fn is_enabled(app: &NephclickPhotoLabApp, id: &str) -> bool {
         i if proof_preset(i).is_some() => app.session.active().is_some(),
         // "Custom…" is the full Proof Setup dialog.
         "view.proofSetup.custom" => app.session.active().is_some(),
+        // The app's own view commands, which the engine doesn't know: live with a document open.
+        "view.splitView" | "layer.new.lightPoseAi" => app.session.active().is_some(),
         "view.rulers" | "view.show.grid" | "view.show.guides" | "view.snap" | "view.lockGuides" => true,
         "view.editSelectedGuides" | "view.clearSelectedGuides" => crate::guide_select::selected(app).is_some(),
         "edit.cut" | "edit.copy" if app.ui.text_edit.is_some() => crate::type_tool::selected_range(app).is_some(),

@@ -83,6 +83,7 @@ impl CanvasTool for DialogTool<'_> {
                 DialogPick::ColorRange => (canvas_input::pick_color_range(app, at, mods), !follows),
                 // A drag after the locator's press does nothing (#9648).
                 DialogPick::Locator => (canvas_input::locate(app, at), true),
+                DialogPick::RangePick => (crate::adjust_editors::range_pick::pick(app, at), true),
                 DialogPick::ShadowDrag => (canvas_input::drag_shadow(app, at, [0.0, 0.0]), false),
                 DialogPick::GradientDrag => (canvas_input::drag_gradient(app, at, [0.0, 0.0]), false),
                 DialogPick::PatternPhase => {

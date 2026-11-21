@@ -192,7 +192,7 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ctx: &egui::Context) {
 
 fn editor_ui(ui: &mut egui::Ui, editor: &mut Editor, presets: &[craft::draw::ui::gradient::GradientGroup], asked: &mut Asked) {
     // Presets, the stop bar, Reverse and Dither.
-    let GradientMapOutput { event, color_requested, import, .. } = GradientMapEditor::new(tl!("Gradient Map"), &editor.map).presets(presets).show(ui);
+    let GradientMapOutput { event, color_requested, import, .. } = GradientMapEditor::new(tl!("Gradient Map"), &editor.map).presets(presets).options(false).show(ui);
     if let Some(event) = event {
         event.apply(&mut editor.map);
         editor.kind = Kind::Solid;
@@ -265,7 +265,10 @@ fn solid_ui(ui: &mut egui::Ui, editor: &mut Editor) {
             }
         });
     }
+    // Reverse, Dither and the stop buttons on one line.
     ui.horizontal(|ui| {
+        map_options(ui, &mut editor.map);
+        ui.separator();
         if ui.add_enabled(count < MAX_STOPS, egui::Button::new(tl!("Add Stop"))).clicked() {
             // Halfway between the selected stop and the next, in the colour the gradient has there.
             let at = match (stops.get(editor.selected), stops.get(editor.selected + 1)) {
@@ -297,8 +300,15 @@ fn solid_ui(ui: &mut egui::Ui, editor: &mut Editor) {
     }
 }
 
+/// The map's Reverse and Dither boxes.
+fn map_options(ui: &mut egui::Ui, map: &mut GradientMap) {
+    ui.checkbox(&mut map.reverse, tl!("Reverse"));
+    ui.checkbox(&mut map.dither, tl!("Dither"));
+}
+
 /// A Noise gradient's settings and Randomize.
 fn noise_ui(ui: &mut egui::Ui, editor: &mut Editor) {
+    ui.horizontal(|ui| map_options(ui, &mut editor.map));
     let before = editor.noise.clone();
     let noise = &mut editor.noise;
     ui.horizontal(|ui| {

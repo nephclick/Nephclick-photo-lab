@@ -148,6 +148,16 @@ pub(crate) const QUICK_MASK: &str = "select.editInQuickMaskMode";
 
 /// Quick Mask as a rail button, the size of the tool buttons: a click runs Edit in Quick Mask Mode, and the button shows
 /// on while the active document is in Quick Mask.
+/// Split Before and After as a rail button, three slots up from the bottom: a click turns the comparison on or off, and
+/// the button shows on while it is on.
+fn split_button(ui: &mut egui::Ui) {
+    let tools = [RailTool::new(0_u8, CommandRef::new(SPLIT_VIEW))];
+    let _ = FlyoutButton::new(&tools, &0).id_salt("split-view").selected(crate::canvas::split_view::is_on()).show(ui);
+}
+
+/// View › Split Before and After, which the rail's footer shows as a rail button.
+pub(crate) const SPLIT_VIEW: &str = "view.splitView";
+
 fn quick_mask_button(app: &NephclickPhotoLabApp, ui: &mut egui::Ui) {
     let on = app.session.active().is_some_and(|s| s.doc.quick_mask.is_some());
     let tools = [RailTool::new(0_u8, CommandRef::new(QUICK_MASK))];
@@ -166,6 +176,7 @@ fn footer(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, rail: RailFooter) {
     let column = ui.available_width();
     color_chips(app, ui, column);
     let modes = |ui: &mut egui::Ui, app: &mut NephclickPhotoLabApp| {
+        split_button(ui);
         quick_mask_button(app, ui);
         ScreenModeButton::new(app.ui.view.screen_mode).show(ui);
     };

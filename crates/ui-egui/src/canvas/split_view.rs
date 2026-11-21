@@ -1,4 +1,4 @@
-//! View › Split View: compare the image as it is now with the image as it was opened.
+//! View › Split Before and After: compare the image as it is now with the image as it was opened.
 //!
 //! Three modes, picked in the bar Split View shows over the canvas:
 //! - **Side by Side**: the opened image left of a vertical divider, the edited one right of it;
@@ -202,12 +202,12 @@ pub fn controls(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, view: &Canv
         .show(ctx, |ui| {
             egui::Frame::popup(ui.style()).show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.strong(tl!("Split View"));
+                    ui.strong(tl!("Before and After"));
                     ui.separator();
                     let mut mode = s.mode;
-                    ui.selectable_value(&mut mode, Mode::SideBySide, tl!("Side by Side"));
-                    ui.selectable_value(&mut mode, Mode::Stacked, tl!("Stacked"));
-                    ui.selectable_value(&mut mode, Mode::Toggle, tl!("Toggle"));
+                    ui.selectable_value(&mut mode, Mode::SideBySide, tl!("Left/Right"));
+                    ui.selectable_value(&mut mode, Mode::Stacked, tl!("Top/Bottom"));
+                    ui.selectable_value(&mut mode, Mode::Toggle, tl!("Single"));
                     if mode != s.mode {
                         edit(|s| s.mode = mode);
                     }
@@ -225,4 +225,17 @@ pub fn controls(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, view: &Canv
                 });
             });
         });
+}
+
+#[cfg(test)]
+mod enabled_tests {
+    use serde_json::json;
+
+    #[test]
+    fn split_view_is_enabled_with_a_document() {
+        let mut app = crate::NephclickPhotoLabApp::new(nephclick_photolab_engine::Session::new(), crate::Services::default());
+        assert!(!crate::menus::is_enabled(&app, "view.splitView"), "greyed without a document");
+        app.run("file.new", json!({"width": 40, "height": 30})).unwrap();
+        assert!(crate::menus::is_enabled(&app, "view.splitView"), "enabled with a document");
+    }
 }
