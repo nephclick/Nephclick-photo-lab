@@ -1,7 +1,7 @@
 {
   "all": {
     "size.dock.column": 290,
-    "size.dialog.least": 320,
+    "size.dialog.least": 380,
     "size.dialog.wrap": 440,
     "size.dialog.button": 88,
     "size.length.field.md": 200,
@@ -11,8 +11,8 @@
     "space.gap.stack": 8,
     "space.gap.section": 16,
     "space.gap.item": 8,
-    "size.plot.width": 296,
-    "size.plot.height": 178
+    "size.plot.width": 356,
+    "size.plot.height": 214
   },
   "compact": {
     "typography.label.size": 12,

@@ -248,6 +248,11 @@ pub(crate) fn display_doc(app: &mut NephclickPhotoLabApp, idx: usize) -> Option<
         let moving = with_descendants(&doc, &ids);
         let too_big = exceeds(&doc, &ids, LIVE_LIMIT, mask_target);
         let bounds = bounds.map(|b| moving.iter().filter_map(|id| shape_reach(doc.layer(*id)?, canvas)).fold(b, |acc, r| acc.union(&r)));
+        // Type lays out where its pixels land only when it renders, so its bound is not known ahead: a drag of a type
+        // layer recomposites the whole canvas each frame (no bound), else the text was cleared from where it was and
+        // never drawn where it went until the release (or ↩) redrew everything.
+        let has_type = moving.iter().any(|id| doc.layer(*id).is_some_and(|l| matches!(l.content, nephclick_photolab_doc::LayerContent::Text(_))));
+        let bounds = if has_type { None } else { bounds };
         app.move_preview =
             Some(MovePreview { doc: doc_id, revision, ids, moving, bounds, canvas, offsets: Vec::new(), shown: None, floating: false, too_big, pattern });
     }

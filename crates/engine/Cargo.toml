@@ -16,7 +16,7 @@ nephclick-photolab-geom = { workspace = true }
 nephclick-photolab-color = { workspace = true }
 craft-cms = { workspace = true }
 # PCTIP codec from craft-libs#1564; isolated pin until the shared revision is adopted workspace-wide.
-craft-pcraft-tip = { package = "craft-pcraft-format", git = "https://github.com/nephclick/craft-libs", rev = "7ffb8caf080c30f48f1d4b82158b5ff774d38b48" }
+craft-pcraft-tip = { package = "craft-pcraft-format", git = "https://github.com/nephclick/craft-libs", rev = "388b1c3b32c93f9fcb84b0bd8d61cfb57962b9b2" }
 nephclick-photolab-raster = { workspace = true }
 nephclick-photolab-doc = { workspace = true }
 nephclick-photolab-ops = { workspace = true }

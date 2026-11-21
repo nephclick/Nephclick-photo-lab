@@ -704,7 +704,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["View", "Screen Mode"], "Full Screen Mode", None, "view.screenMode.fullScreen"),
     (&["View"], "---", None, "---"),
     (&["View"], "Extras", Some("Cmd+H"), "view.extras"),
-    (&["View"], "Split View", Some("Alt+Shift+Y"), "view.splitView"),
+    (&["View"], "Split Before and After", Some("Alt+Shift+Y"), "view.splitView"),
     (&["View", "Show"], "Layer Edges", None, "view.show.layerEdges"),
     (&["View", "Show"], "Selection Edges", None, "view.show.selectionEdges"),
     (&["View", "Show"], "Target Path", Some("Cmd+Shift+H"), "view.show.targetPath"),

@@ -44,6 +44,8 @@ pub(crate) enum DialogPick {
     PatternPhase,
     /// A click on the image moves a filter preview's view to the point.
     Locator,
+    /// Hue/Saturation's or Selective Color's range eyedropper: a click shows the range of the pixel's colour.
+    RangePick,
 }
 
 /// The pipette's tip, at the bottom left of its 24-unit icon box.
@@ -53,6 +55,10 @@ const PIPETTE_HOTSPOT: egui::Vec2 = egui::vec2(2.0, 22.0);
 ///
 /// Reads the host's stack only. A dialog below the top never arms a pick: the dialog over it takes the input.
 pub(crate) fn armed(app: &NephclickPhotoLabApp) -> Option<DialogPick> {
+    // The range eyedropper, in a dialog or an adjustment layer's editor alike, takes the next click first.
+    if crate::adjust_editors::range_pick::armed() {
+        return Some(DialogPick::RangePick);
+    }
     let dialogs = &app.framework.dialogs;
     let Some(top) = dialogs.stack().top() else {
         return super::layer_picker::armed(app).map(|(_, picker)| DialogPick::TonePicker(picker));
@@ -233,7 +239,7 @@ fn held(app: &NephclickPhotoLabApp) -> Mods {
 pub(crate) fn cursor(app: &NephclickPhotoLabApp, pick: DialogPick) -> Cursor {
     let pipette = |badge| Cursor::Painted(PaintedCursor::tool(IconId::new("eyedropper"), PIPETTE_HOTSPOT, badge));
     match pick {
-        DialogPick::TonePicker(_) | DialogPick::Color | DialogPick::ParamDropper => pipette(None),
+        DialogPick::TonePicker(_) | DialogPick::Color | DialogPick::ParamDropper | DialogPick::RangePick => pipette(None),
         DialogPick::ColorRange => {
             let badge = app.framework.dialogs.get::<HostedColorRange>().and_then(|dialog| dialog.tool().with_mods(held(app)).badge());
             pipette(badge)

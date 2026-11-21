@@ -55,6 +55,10 @@ impl ApplyAs {
 #[derive(Default)]
 pub struct PaletteUi {
     pub apply_as: ApplyAs,
+    /// Create from a Colour: the base colour and the harmony rule (`None`: not chosen yet, the foreground and
+    /// Complementary).
+    base: Option<[u8; 3]>,
+    harmony: Option<nephclick_photolab_ai::harmony::Harmony>,
     /// Pattern presets already defined, by [`pattern_key`].
     defined: HashMap<String, String>,
     /// Pattern tile textures, by [`pattern_key`].
@@ -106,6 +110,7 @@ pub fn body(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui) {
         ui.set_width(width);
         ui.set_max_width(width);
         prompt_row(app, ui, &t, width, &mut acts);
+        harmony_row(app, ui, &t, width);
         browse(app, ui, &t, width, &mut acts);
         ui.add_space(4.0);
         ui.separator();
@@ -162,6 +167,55 @@ fn prompt_row(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, t: &Tokens, wid
 }
 
 /// The themed sets: a search field, the categories as chips, and the matching themes.
+/// Owner of the panel's screen colour pick.
+const PICK_OWNER: &str = "palette-base-colour";
+
+/// Create from a Colour: a base colour (its swatch, or the eyedropper, which picks anywhere on the screen, other
+/// applications included) and one of the thirteen harmony rules make the palette's five colours, with gradients and
+/// patterns made from them.
+fn harmony_row(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, t: &Tokens, width: f32) {
+    use nephclick_photolab_ai::harmony::Harmony;
+    section(ui, t, tl!("CREATE FROM A COLOR"));
+    if let Some(picked) = crate::screen_picker::take(app, PICK_OWNER) {
+        let byte = |x: f32| (x.clamp(0.0, 1.0) * 255.0).round() as u8;
+        app.palette_ui.base = Some([byte(picked.r), byte(picked.g), byte(picked.b)]);
+    }
+    let fg = app.session.tools.foreground;
+    let byte = |x: f32| (x.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let mut base = app.palette_ui.base.unwrap_or([byte(fg[0]), byte(fg[1]), byte(fg[2])]);
+    let mut rule = app.palette_ui.harmony.unwrap_or(Harmony::Complementary);
+    let mut generate = false;
+    ui.horizontal(|ui| {
+        if ui.color_edit_button_srgb(&mut base).on_hover_text(tl!("Base colour")).changed() {
+            app.palette_ui.base = Some(base);
+        }
+        let pick = ui.button(tl!("Pick from Screen")).on_hover_text(tl!("Pick a colour from anywhere on the screen, other apps included"));
+        if pick.clicked() {
+            crate::screen_picker::hold(app, ui.ctx(), PICK_OWNER, craft::color_ui::ui::ScreenPickGesture::Clicked);
+        }
+    });
+    ui.horizontal(|ui| {
+        egui::ComboBox::from_id_salt("palette-harmony")
+            .width((width - 96.0).max(120.0))
+            .selected_text(tl!(rule.name()))
+            .show_ui(ui, |ui| {
+                for h in Harmony::ALL {
+                    if ui.selectable_value(&mut rule, h, tl!(h.name())).clicked() {
+                        app.palette_ui.harmony = Some(h);
+                        generate = true;
+                    }
+                }
+            });
+        if ui.button(tl!("Generate")).clicked() {
+            generate = true;
+        }
+    });
+    if generate {
+        let colors = rule.colors(nephclick_photolab_ai::palette::Rgb(base));
+        app.ai.palette = Some(nephclick_photolab_ai::palette::Palette::from_colors(rule.name(), &colors));
+    }
+}
+
 fn browse(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, t: &Tokens, width: f32, acts: &mut Vec<Act>) {
     section(ui, t, tl!("BROWSE THEMES"));
     ui.add(
