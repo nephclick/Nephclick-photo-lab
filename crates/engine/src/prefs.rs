@@ -109,7 +109,7 @@ choice!(CheckerSize { None = "none", Small = "small", Medium = "medium", Large =
 choice!(CheckerColors { Light = "light", Medium = "medium", Dark = "dark", Red = "red", Orange = "orange", Green = "green", Blue = "blue", Purple = "purple", Custom = "custom" } default Light);
 choice!(LineStyle { Lines = "lines", Dashed = "dashedLines", Dots = "dots" } default Lines);
 choice!(TextEngine { Modern = "modern", EastAsian = "eastAsian", WorldReady = "worldReady" } default WorldReady);
-choice!(FontPreview { Off = "off", Small = "small", Medium = "medium", Large = "large", ExtraLarge = "extraLarge", Huge = "huge" } default Medium);
+choice!(FontPreview { Off = "off", Small = "small", Medium = "medium", Large = "large", ExtraLarge = "extraLarge", Huge = "huge" } default Off);
 choice!(RawColorSpace { Srgb = "srgb", AdobeRgb = "adobeRgb", ProPhoto = "proPhoto", DisplayP3 = "displayP3" } default AdobeRgb);
 choice!(RawDepth { Eight = "8", Sixteen = "16" } default Sixteen);
 choice!(RawSharpen { None = "none", Screen = "screen", Glossy = "glossy", Matte = "matte" } default None);
@@ -1148,6 +1148,11 @@ pub struct TypePrefs {
     /// Favourite font families, starred in the font menu (`type.font.favorite`), in the order
     /// they were added.
     pub favorite_fonts: Vec<String>,
+    /// Settings saved before the font menu listed plain names by default have been moved to Off once: a preview size
+    /// still on the old default (Medium) took Off, and a size chosen afterwards stays. Loading each family's face to
+    /// draw its sample rebuilt the interface's fonts while the list scrolled, and the rows moved as faces arrived.
+    #[serde(default)]
+    pub plain_font_list_adopted: bool,
 }
 
 impl Default for TypePrefs {
@@ -1158,10 +1163,11 @@ impl Default for TypePrefs {
             show_font_names_in_english: true,
             use_esc_to_commit: true,
             text_engine: TextEngine::WorldReady,
-            font_preview: FontPreview::Medium,
+            font_preview: FontPreview::Off,
             fill_new_type_layers_with_placeholder: true,
             recent_fonts: 10,
             favorite_fonts: Vec::new(),
+            plain_font_list_adopted: true,
         }
     }
 }
@@ -2074,6 +2080,14 @@ impl Session {
         // An Effect Cache the field no longer accepts (above the 32-bit cap, saved before the cap
         // or by a 64-bit build; a hand-edited 0) loads as the nearest value it does. Otherwise
         // Apply from another Preferences tab, which validates every value, would reject it.
+        // The font menu lists plain names by default: a preview size still on the previous default (Medium) moves to
+        // Off, once.
+        if !prefs.type_.plain_font_list_adopted {
+            if prefs.type_.font_preview == FontPreview::Medium {
+                prefs.type_.font_preview = FontPreview::Off;
+            }
+            prefs.type_.plain_font_list_adopted = true;
+        }
         // Midnight became the default dark theme: settings still on the previous default move to it, once.
         if !prefs.interface.midnight_adopted {
             if prefs.interface.dark_theme == "craft.artcraft" {
