@@ -79,8 +79,8 @@ fn a_release_commits_the_offset_the_readout_caps_at() {
     assert!(s.pixel(16 + 10_000_000, 16 - 10_000_000)[3] > 0.5, "moved by the capped offset");
 }
 
-/// A shape reaching past the canvas edge renders cut at the canvas, but its path goes on: a
-/// drag frame must redraw where the rest of it was, or the cut edge stays behind (#3946).
+/// A shape slides as one picture over the document rendered once without it: no drag frame renders the document
+/// again, so nothing is left behind at the canvas edge (#3946) and the shape never falls behind the pointer.
 #[test]
 fn dragging_a_shape_past_the_canvas_edge_leaves_no_trail() {
     let mut app = NephclickPhotoLabApp::new(nephclick_photolab_engine::Session::new(), crate::Services::default());
@@ -98,15 +98,9 @@ fn dragging_a_shape_past_the_canvas_edge_leaves_no_trail() {
         crate::canvas::tool_event(&mut app, ToolEvent::Move { x, y: 32.0, pressure: 1.0 }, m);
         frames.push(super::display_doc(&mut app, 0).unwrap());
     }
-    let st = app.session.active().unwrap();
-    let r = super::damage(&app, st.doc.id, st.revision, frames[0].1, frames[1].1).unwrap();
-    let alpha = |d: &nephclick_photolab_doc::Document, x, y| d.layer(id).and_then(|l| l.surface()).map_or(0.0, |s| s.pixel(x, y)[3]);
-    for y in 0..64 {
-        for x in 0..64 {
-            if alpha(&frames[0].0, x, y) != alpha(&frames[1].0, x, y) {
-                assert!(r.contains(x, y), "({x}, {y}) changed outside the redrawn {r:?}");
-            }
-        }
+    assert_eq!(frames[0].1, frames[1].1, "one picture for the whole drag");
+    for (doc, _) in &frames {
+        assert!(!doc.layer(id).unwrap().visible, "the shape is under its sliding picture, not in the document shown");
     }
 }
 

@@ -160,6 +160,69 @@ pub(crate) struct MovePreview {
     too_big: bool,
     /// View › Pattern Preview: pixels wrap, so a partial damage rect would leave the far edge stale.
     pattern: bool,
+    /// Type, shape and Smart Object layers slide: rendering them again at every offset is too slow to keep up with
+    /// the pointer, so the canvas shows the document without them, rendered once, and their picture, rendered once,
+    /// slides over it ([`overlay`]). The release draws the real result.
+    slide: Option<Slide>,
+}
+
+/// The two pictures of a sliding drag.
+pub(crate) struct Slide {
+    /// The document with the moving layers hidden.
+    base: Arc<Document>,
+    /// The moving layers alone, over the whole canvas.
+    texture: egui::TextureHandle,
+}
+
+/// The longest side of a sliding drag's picture of the moving layers.
+const SLIDE_SIDE: u32 = 4096;
+
+/// Whether moving `ids` slides (vector, type or Smart Object content) rather than re-rendering at each offset.
+fn slides(doc: &Document, moving: &[LayerId]) -> bool {
+    use nephclick_photolab_doc::LayerContent;
+    moving.iter().any(|id| doc.layer(*id).is_some_and(|l| matches!(l.content, LayerContent::Text(_) | LayerContent::Shape(_) | LayerContent::Smart(_))))
+}
+
+/// The pictures of a sliding drag of `moving` in `doc`.
+fn make_slide(ctx: &egui::Context, doc: &Document, moving: &[LayerId]) -> Option<Slide> {
+    let mut base = doc.clone();
+    let mut only = doc.clone();
+    let all: Vec<LayerId> = doc.walk().iter().map(|(_, _, l)| l.id).collect();
+    for id in &all {
+        if moving.contains(id) {
+            base.layer_mut(*id)?.visible = false;
+        } else if !doc.walk().iter().any(|(_, _, l)| l.children().is_some_and(|c| c.iter().any(|c| moving.contains(&c.id))) && l.id == *id) {
+            // Hide everything else, except the groups that hold a moving layer.
+            if let Some(l) = only.layer_mut(*id) {
+                l.visible = false;
+            }
+        }
+    }
+    let side = (ctx.input(|i| i.max_texture_side) as u32).clamp(512, SLIDE_SIDE);
+    let image = nephclick_photolab_compose::thumbnail(&only, side);
+    let color = egui::ColorImage::from_rgba_unmultiplied([image.width as usize, image.height as usize], &image.pixels);
+    let texture = ctx.load_texture("move-slide", color, egui::TextureOptions::LINEAR);
+    Some(Slide { base: Arc::new(base), texture })
+}
+
+/// The moving layers' picture at the drag's offset, over the canvas of document `idx` in `view`: a sliding drag only.
+pub(crate) fn overlay(app: &NephclickPhotoLabApp, view: &craft::behavior::CanvasView, idx: usize) -> Vec<egui::Shape> {
+    let Some(p) = app.move_preview.as_ref() else { return Vec::new() };
+    let (Some(slide), Some(offset)) = (p.slide.as_ref(), drag_offset(app)) else { return Vec::new() };
+    if app.session.documents().get(idx).is_none_or(|st| st.doc.id != p.doc) {
+        return Vec::new();
+    }
+    use craft::behavior::kurbo::Point;
+    let c = p.canvas;
+    let (dx, dy) = (f64::from(offset.0), f64::from(offset.1));
+    let corners = [(c.x0, c.y0), (c.x1, c.y0), (c.x1, c.y1), (c.x0, c.y1)].map(|(x, y)| view.to_screen(Point::new(f64::from(x) + dx, f64::from(y) + dy)));
+    let uvs = [egui::pos2(0.0, 0.0), egui::pos2(1.0, 0.0), egui::pos2(1.0, 1.0), egui::pos2(0.0, 1.0)];
+    let mut mesh = egui::Mesh::with_texture(slide.texture.id());
+    for (pos, uv) in corners.iter().zip(uvs) {
+        mesh.vertices.push(egui::epaint::Vertex { pos: *pos, uv, color: egui::Color32::WHITE });
+    }
+    mesh.indices.extend([0, 1, 2, 0, 2, 3]);
+    vec![egui::Shape::mesh(mesh)]
 }
 
 impl MovePreview {
@@ -248,15 +311,24 @@ pub(crate) fn display_doc(app: &mut NephclickPhotoLabApp, idx: usize) -> Option<
         let moving = with_descendants(&doc, &ids);
         let too_big = exceeds(&doc, &ids, LIVE_LIMIT, mask_target);
         let bounds = bounds.map(|b| moving.iter().filter_map(|id| shape_reach(doc.layer(*id)?, canvas)).fold(b, |acc, r| acc.union(&r)));
-        // Type lays out where its pixels land only when it renders, so its bound is not known ahead: a drag of a type
-        // layer recomposites the whole canvas each frame (no bound), else the text was cleared from where it was and
-        // never drawn where it went until the release (or ↩) redrew everything.
-        let has_type = moving.iter().any(|id| doc.layer(*id).is_some_and(|l| matches!(l.content, nephclick_photolab_doc::LayerContent::Text(_))));
-        let bounds = if has_type { None } else { bounds };
+
         app.move_preview =
-            Some(MovePreview { doc: doc_id, revision, ids, moving, bounds, canvas, offsets: Vec::new(), shown: None, floating: false, too_big, pattern });
+            Some(MovePreview { doc: doc_id, revision, ids, moving, bounds, canvas, offsets: Vec::new(), shown: None, floating: false, too_big, pattern, slide: None });
+        // Type, shapes and Smart Objects slide as one picture (made once, here) instead of re-rendering each frame.
+        if !pattern && slides(&doc, &app.move_preview.as_ref().map(|p| p.moving.clone()).unwrap_or_default()) {
+            let ctx = app.ctx().clone();
+            let moving = app.move_preview.as_ref().map(|p| p.moving.clone()).unwrap_or_default();
+            let slide = make_slide(&ctx, &doc, &moving);
+            if let Some(p) = app.move_preview.as_mut() {
+                p.slide = slide;
+            }
+        }
     }
     let p = app.move_preview.as_mut()?;
+    // A sliding drag shows the document without the moving layers, under one unchanging key: rendered once.
+    if let Some(slide) = p.slide.as_ref() {
+        return Some((Arc::clone(&slide.base), BASE));
+    }
     if p.too_big {
         return None;
     }
@@ -305,6 +377,9 @@ pub(crate) fn with_descendants(doc: &Document, ids: &[LayerId]) -> Vec<LayerId> 
 /// so its Layer Edges outline moves in lockstep with its pixels (#2413). `None` when it shows
 /// where it is.
 pub(crate) fn shown_layer_offset(app: &NephclickPhotoLabApp, doc: DocId, revision: u64, id: LayerId) -> Option<(i32, i32)> {
+    if let Some(p) = app.move_preview.as_ref().filter(|p| p.doc == doc && p.revision == revision && p.slide.is_some()) {
+        return if p.moving.contains(&id) { drag_offset(app) } else { None };
+    }
     let p = app.move_preview.as_ref().filter(|p| p.doc == doc && p.revision == revision && !p.floating && p.shown.is_some())?;
     if !p.moving.contains(&id) {
         return None;
@@ -343,6 +418,7 @@ fn floating_doc(app: &mut NephclickPhotoLabApp, idx: usize) -> Option<(Arc<Docum
             floating: true,
             too_big: false,
             pattern: false,
+            slide: None,
         });
     }
     if offset == (0, 0) && app.move_preview.as_ref().is_none_or(|p| p.offsets.is_empty()) {

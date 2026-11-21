@@ -322,6 +322,10 @@ pub(crate) fn show(app: &mut NephclickPhotoLabApp, ui: &mut egui::Ui, view: &mut
         // after the picture.
         let mut clipping = if primary { crate::levels_clipping::shapes(app, ctx, &space.view, idx) } else { Vec::new() };
         // View › Split View: the opened image over its side of the divider, and the divider.
+        // A sliding Move drag (type, shapes, Smart Objects): the moving layers' picture at the pointer.
+        if primary {
+            clipping.extend(super::move_ui::overlay(app, &space.view, idx));
+        }
         if primary {
             clipping.extend(super::split_view::shapes(app, ctx, &space.view, idx));
             super::split_view::controls(app, ctx, &space.view, body.rect, idx);

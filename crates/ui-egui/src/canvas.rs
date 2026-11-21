@@ -796,3 +796,5 @@ mod pen_gesture_owner_tests;
 mod path_selection_cursor_tests;
 #[cfg(test)]
 mod brush_circle_tests;
+#[cfg(test)]
+mod move_slide_tests;
