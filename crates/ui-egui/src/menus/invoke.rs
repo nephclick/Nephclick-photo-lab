@@ -741,6 +741,10 @@ fn invoke_view_command(app: &mut NephclickPhotoLabApp, ctx: &egui::Context, id: 
         }
         "view.editSelectedGuides" => Some(crate::new_guide_ui::open_edit(app).map(|_| Value::Null)),
         "view.splitView" => Some(crate::canvas::split_view::command(app, params)),
+        "image.generativeExpand" => {
+            crate::generative_expand_ui::open(app);
+            Some(Ok(json!({"dialog": "generativeExpand"})))
+        }
         "view.clearSelectedGuides" => {
             Some(crate::guide_select::delete_selected(app).and_then(|done| if done { Ok(Value::Null) } else { Err("No guide is selected".to_string()) }))
         }
